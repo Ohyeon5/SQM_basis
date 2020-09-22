@@ -20,3 +20,12 @@ model, name = PredNet((im_dims[-1], 32, 64, 128), (im_dims[-1], 32, 64, 128)), '
 recons      = None
 decoder     = simple_decoder()
 wrapper     = Wrapper(model, recons, decoder, 0.0, decode_crit, 0, name)
+
+# Train model on next frame prediction task
+if do_run['recons']:
+  wrapper.set_noise(noise_lvl['recons'])
+  for n in n_frames['recons']:
+    wrapper.n_frames = n
+    if do_best_lr['recons']:
+      init_lr['decode'] = find_best_lr(wrapper, n_objs['recons'], im_dims, batch_size['recons'], mode='recons', custom=False, from_scratch=True)
+    train_recons(wrapper, n_objs['recons'], im_dims, n_epochs['recons'], batch_size['recons'], n_batches['recons'], init_lr['recons'], from_scratch=False)
