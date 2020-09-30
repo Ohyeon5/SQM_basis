@@ -9,3 +9,7 @@ def find_best_lr(wrapper, n_objs, im_dims, batch_size, mode='decode', custom=Tru
 
   # Training loop utilities
   decay_rate = max_lr / min_lr
+  
+  # Load checkpoint if necessary
+  if not from_scratch or mode=='decode':
+    print('\nLoading trained reconstruction weights...')
