@@ -1,4 +1,5 @@
 from models import PredNet, simple_decoder, Wrapper
+from find_best_lr import find_best_lr
 
 # Main parameters
 im_dims     = (64, 64, 3)                                           # input images are 64 by 64 pixels, with 3 color channels (RGB)
