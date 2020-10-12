@@ -1,6 +1,6 @@
 import torch
 
-def train_hand_gesture_classifier(model, optimizer, n_epochs, batch_size, batches_per_epoch, criterion=torch.nn.CrossEntropyLoss):
+def train_hand_gesture_classifier(model, optimizer, n_epochs, batch_size, batches_per_epoch, criterion=torch.nn.CrossEntropyLoss()):
   """Train the provided model to perform hand gesture classification based on a frame sequence.
 
   Parameters
