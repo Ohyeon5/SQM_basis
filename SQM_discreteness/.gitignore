@@ -1,0 +1,11 @@
+# data files
+/data
+/saved_models
+/examples
+/__pycache__
+
+# local temp files
+temp.py
+
+# log files
+*.log
