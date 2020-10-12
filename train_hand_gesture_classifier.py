@@ -19,6 +19,8 @@ def train_hand_gesture_classifier(model, optimizer, n_epochs, batch_size, batche
       The loss function to use
   """
   for epoch in range(n_epochs):
+    # The mean loss across mini-batches in the current epoch
+    mean_loss = 0.0
     for (inputs, labels) in range(batches_per_epoch):
       # Clear the gradients from the previous batch
       optimizer.zero_grad()
@@ -30,4 +32,9 @@ def train_hand_gesture_classifier(model, optimizer, n_epochs, batch_size, batche
       loss.backward()
       # Update the model weights
       optimizer.step()
+      
+      # Accumulate the loss
+      mean_loss += loss
+    
+    mean_loss /= batches_per_epoch
 
