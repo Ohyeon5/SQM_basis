@@ -1,6 +1,6 @@
 import torch
 
-class Wrapper(torch.nn.module):
+class Wrapper(torch.nn.Module):
   """Wrap a convolutional module, an encoder and a decoder
 
   Parameters

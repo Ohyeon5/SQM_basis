@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from convlstm_SreenivasVRao import *
+from SQM_discreteness.convlstm_SreenivasVRao import *
 
 
 ###############
