@@ -24,3 +24,5 @@ class Wrapper(torch.nn.Module):
     x = self.conv_module(x)
     x = self.encoder_module(x)
     x = self.decoder_module(x)
+
+    return x
