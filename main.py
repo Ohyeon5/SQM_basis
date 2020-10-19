@@ -30,6 +30,7 @@ do_train_LR_vernier_classifier = False
 model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(4), FF_classifier(256, 2, hidden_channels=10))
 n_epochs = command_line_args.n_epochs
 batch_size = command_line_args.batch_size
+# Set up the dataset
 training_dataset = HDF5Dataset(command_line_args.training_data_path)
 training_dl = DataLoader(training_dataset, batch_size=batch_size)
 

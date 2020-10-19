@@ -1,4 +1,5 @@
 import torch
+from SQM_discreteness.hdf5_loader import ToTensor
 
 def train_hand_gesture_classifier(model, optimizer, n_epochs, train_ds, criterion=torch.nn.CrossEntropyLoss()):
   """Train the provided model to perform hand gesture classification based on a frame sequence.
@@ -21,20 +22,20 @@ def train_hand_gesture_classifier(model, optimizer, n_epochs, train_ds, criterio
 
   batches_per_epoch = len(train_ds) // 1
 
+  tensor_converter = ToTensor()
+
   for epoch in range(n_epochs):
     # The mean loss across mini-batches in the current epoch
     mean_loss = 0.0
     for i in range(len(train_ds)):
-      train_images = torch.stack([torch.from_numpy(image).float() for image in train_ds[i]['images']])
-      train_images = torch.transpose(train_images, 3, 2)
-      train_images = torch.transpose(train_images, 2, 1)
-      train_images = torch.transpose(train_images, 1, 0)
-      # T x W x H x C
+      sample = tensor_converter(train_ds[i])
+      train_images = torch.stack(sample['images'])
+      train_images = train_images.transpose(0, 1)
+      # C x T x W x H
       # print(train_images.shape)
       train_images = [train_images]
-      train_label = train_ds[i]['label']
-      train_label_id = torch.tensor(train_ds[i]['label_id']).unsqueeze(0)
-      # print("Type of train label: " + type(train_label))
+      train_label = sample['label']
+      train_label_id = torch.tensor(sample['label_id']).unsqueeze(0)
       # Clear the gradients from the previous batch
       optimizer.zero_grad()
       # Compute the model outputs
@@ -49,6 +50,8 @@ def train_hand_gesture_classifier(model, optimizer, n_epochs, train_ds, criterio
       
       # Accumulate the loss
       mean_loss += loss
+
+      print("Loss after batch {}: {}".format(i, loss))
     
     mean_loss /= batches_per_epoch
 
