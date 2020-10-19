@@ -21,23 +21,22 @@ from SQM_discreteness.hdf5_loader import HDF5Dataset
 arg_parser = argparse.ArgumentParser(description='Train a deep learning model for various tasks')
 arg_parser.add_argument('--n-epochs', type=int)
 arg_parser.add_argument('--batch-size', type=int)
-arg_parser.add_argument('--batches-per-epoch', type=int)
 arg_parser.add_argument('--training-data-path', type=str)
 
 command_line_args = arg_parser.parse_args()
 
 do_train_hand_gesture_classifier = True
 do_train_LR_vernier_classifier = False
-model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(4), FF_classifier(3, 2, hidden_channels=10)) # TODO change in_channels
+model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(4), FF_classifier(256, 2, hidden_channels=10))
 n_epochs = command_line_args.n_epochs
 batch_size = command_line_args.batch_size
-batches_per_epoch = command_line_args.batches_per_epoch
 training_dataset = HDF5Dataset(command_line_args.training_data_path)
 training_dl = DataLoader(training_dataset, batch_size=batch_size)
 
 if (do_train_hand_gesture_classifier):
+  print("Training end-to-end for hand gesture classification")
   optimizer = torch.optim.Adam(model.parameters())
-  train_hand_gesture_classifier(model, optimizer, n_epochs, training_dl)
+  train_hand_gesture_classifier(model, optimizer, n_epochs, training_dataset)
 
 if (do_train_LR_vernier_classifier):
   optimizer = torch.optim.Adam(model.parameters())

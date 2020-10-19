@@ -256,7 +256,8 @@ class Primary_conv3D(nn.Module):
 		# arg: x is a list of images
 		# Stack to 5D layer and then pass 5d (BxCxTxHxW) to primaryConv3D and transpose it to BxTxCxHxW
 
-		img = torch.stack(x,2).to(self.device) # stacked img: 5D tensor => B x C x T x H x W
+		img = torch.stack(x).to(self.device) # stacked img: 5D tensor => B x C x T x H x W
+		# print("Img shape in conv: {}".format(img.shape))
 		img = self.primary_conv3D(img)
 		img = torch.transpose(img,2,1)  # Transpose B x C x T x H x W --> B x T x C x H x W
 
@@ -340,10 +341,14 @@ class ConvLSTM_disc_low(nn.Module):
 			imgs.append(mm[0][:,-1,:,:,:])
 		img = torch.stack(imgs,1) # stacked img: 5D tensor => B x T x C x H x W
 		
-		img = self.secondary_convlstm(img)  	# img: 5D tensor => B x T x Filters x H x W
+		img = self.secondary_convlstm(img)  	# img: 5D tensor => B x T x Filters x H x W  
+
+		# print("Shape of secondary convlstm output: len {}, shape {}".format(len(img), img[0].shape))
 
 		# Base Network: use the last layer only
-		img = img[-1][:,-1,:,:,:].squeeze()
+		img = img[-1][:,-1,:,:,:].squeeze(1)
+
+		# print("Shape of convlstm output: {}".format(img.shape))
 
 		return img
 
@@ -436,10 +441,15 @@ class FF_classifier(nn.Module):
 	def forward(self, x):	
 		# arg: x is a 4D tensor B x C x H x W
 
+		# print("Input shape to FF classifier: {}".format(x.shape))
+
 		x = self.avgpool(x)
 		if self.norm_layer is not None:
 			x = self.norm_layer(x)
 		x = x.contiguous().view(x.shape[0],-1)
+
+		# print("Input shape to classifier: {}".format(x.shape))
+
 		x = self.classifier(x)
 
 		return x		
