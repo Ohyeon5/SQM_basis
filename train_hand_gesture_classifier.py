@@ -1,7 +1,6 @@
 import torch
-from SQM_discreteness.hdf5_loader import ToTensor
 
-def train_hand_gesture_classifier(model, optimizer, n_epochs, train_ds, criterion=torch.nn.CrossEntropyLoss()):
+def train_hand_gesture_classifier(model, optimizer, n_epochs, train_dl, criterion=torch.nn.CrossEntropyLoss()):
   """Train the provided model to perform hand gesture classification based on a frame sequence.
 
   Parameters
@@ -20,26 +19,19 @@ def train_hand_gesture_classifier(model, optimizer, n_epochs, train_ds, criterio
 
   id_to_label = {0: "Swiping Left", 1: "Swiping Right"}
 
-  batches_per_epoch = len(train_ds) // 1
-
-  tensor_converter = ToTensor()
-
   for epoch in range(n_epochs):
     # The mean loss across mini-batches in the current epoch
     mean_loss = 0.0
-    for i in range(len(train_ds)):
-      sample = tensor_converter(train_ds[i])
-      train_images = [image.unsqueeze(0) for image in sample['images']]
+    for i, batch in enumerate(train_dl):
+      # print("Batch image shape: {}".format(batch['images'][0].shape))
       # print("Train image shape: {}".format(train_images[0].shape))
-      train_label = sample['label']
-      train_label_id = sample['label_id'].unsqueeze(0)
       # Clear the gradients from the previous batch
       optimizer.zero_grad()
       # Compute the model outputs
-      predicted_hand_gestures = model(train_images)
+      predicted_hand_gestures = model(batch['images'])
       # print("Predicted hand gestures: {}".format(predicted_hand_gestures))
       # Compute the loss
-      loss = criterion(predicted_hand_gestures, train_label_id)
+      loss = criterion(predicted_hand_gestures, batch['label_id'])
       # Compute the gradients
       loss.backward()
       # Update the model weights
@@ -50,7 +42,7 @@ def train_hand_gesture_classifier(model, optimizer, n_epochs, train_ds, criterio
 
       print("Loss after batch {}: {}".format(i, loss))
     
-    mean_loss /= batches_per_epoch
+    mean_loss /= len(train_dl)
 
     print("Loss after epoch {}: {}".format(epoch, mean_loss))
 
