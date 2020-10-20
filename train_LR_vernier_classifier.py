@@ -1,6 +1,6 @@
 import torch
 
-def train_LR_vernier_classifier(model, optimizer, n_epochs, batch_size, batches_per_epoch, criterion=torch.nn.BCELoss()):
+def train_LR_vernier_classifier(model, optimizer, n_epochs, train_dl, criterion=torch.nn.BCELoss()):
   """Train the provided model to perform vernier classification based on a frame sequence.
 
   Parameters
