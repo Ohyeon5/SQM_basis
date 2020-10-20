@@ -256,7 +256,7 @@ class Primary_conv3D(nn.Module):
 		# arg: x is a list of images
 		# Stack to 5D layer and then pass 5d (BxCxTxHxW) to primaryConv3D and transpose it to BxTxCxHxW
 
-		img = torch.stack(x).to(self.device) # stacked img: 5D tensor => B x C x T x H x W
+		img = torch.stack(x,2).to(self.device) # stacked img: 5D tensor => B x C x T x H x W
 		# print("Img shape in conv: {}".format(img.shape))
 		img = self.primary_conv3D(img)
 		img = torch.transpose(img,2,1)  # Transpose B x C x T x H x W --> B x T x C x H x W

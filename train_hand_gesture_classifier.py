@@ -29,13 +29,10 @@ def train_hand_gesture_classifier(model, optimizer, n_epochs, train_ds, criterio
     mean_loss = 0.0
     for i in range(len(train_ds)):
       sample = tensor_converter(train_ds[i])
-      train_images = torch.stack(sample['images'])
-      train_images = train_images.transpose(0, 1)
-      # C x T x W x H
-      # print(train_images.shape)
-      train_images = [train_images]
+      train_images = [image.unsqueeze(0) for image in sample['images']]
+      # print("Train image shape: {}".format(train_images[0].shape))
       train_label = sample['label']
-      train_label_id = torch.tensor(sample['label_id']).unsqueeze(0)
+      train_label_id = sample['label_id'].unsqueeze(0)
       # Clear the gradients from the previous batch
       optimizer.zero_grad()
       # Compute the model outputs
