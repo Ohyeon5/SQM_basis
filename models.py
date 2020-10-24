@@ -34,8 +34,11 @@ class Wrapper(torch.nn.Module):
       'decoder_module_state_dict': self.decoder_module.state_dict()
     })
 
-  def load_checkpoint(self, path):
+  def load_checkpoint(self, path, load_conv, load_encoder, load_decoder):
     checkpoint = torch.load(path)
-    self.conv_module.load_state_dict(checkpoint['conv_module_state_dict'])
-    self.encoder_module.load_state_dict(checkpoint['encoder_module_state_dict'])
-    self.decoder_module.load_state_dict(checkpoint['decoder_module_state_dict'])
+    if load_conv:
+      self.conv_module.load_state_dict(checkpoint['conv_module_state_dict'])
+    if load_encoder:
+      self.encoder_module.load_state_dict(checkpoint['encoder_module_state_dict'])
+    if load_decoder:
+      self.decoder_module.load_state_dict(checkpoint['decoder_module_state_dict'])
