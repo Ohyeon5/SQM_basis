@@ -26,3 +26,16 @@ class Wrapper(torch.nn.Module):
     x = self.decoder_module(x)
 
     return x
+
+  def save_checkpoint(self, path):
+    torch.save({
+      'conv_module_state_dict': self.conv_module.state_dict(),
+      'encoder_module_state_dict': self.encoder_module.state_dict(),
+      'decoder_module_state_dict': self.decoder_module.state_dict()
+    })
+
+  def load_checkpoint(self, path):
+    checkpoint = torch.load(path)
+    self.conv_module.load_state_dict(checkpoint['conv_module_state_dict'])
+    self.encoder_module.load_state_dict(checkpoint['encoder_module_state_dict'])
+    self.decoder_module.load_state_dict(checkpoint['decoder_module_state_dict'])
