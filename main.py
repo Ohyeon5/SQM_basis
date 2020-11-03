@@ -13,7 +13,6 @@ import argparse
 import torch
 from torch.utils.data import DataLoader
 from train_hand_gesture_classifier import train_hand_gesture_classifier
-from train_LR_vernier_classifier import train_LR_vernier_classifier
 from models import Wrapper
 from SQM_discreteness.models import Primary_conv3D, ConvLSTM_disc_low, ConvLSTM_disc_high, FF_classifier
 from SQM_discreteness.hdf5_loader import HDF5Dataset, ToTensor
@@ -39,5 +38,4 @@ if (do_train_hand_gesture_classifier):
 
 if (do_train_LR_vernier_classifier):
   print("Training end-to-end for L/R vernier classification")
-  optimizer = torch.optim.Adam(model.parameters())
-  train_LR_vernier_classifier(model, optimizer, n_epochs, training_dl)
+  # TODO implement
