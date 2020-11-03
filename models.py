@@ -10,8 +10,7 @@ class Wrapper(torch.nn.Module):
   encoder_module : torch.nn.Module
       The encoder module
   decoder_module : torch.nn.Module
-      The decoder module
-      
+      The decoder module    
   """
 
   def __init__(self, conv_module, encoder_module, decoder_module):
@@ -39,7 +38,7 @@ class Wrapper(torch.nn.Module):
       'conv_module_state_dict': self.conv_module.state_dict(),
       'encoder_module_state_dict': self.encoder_module.state_dict(),
       'decoder_module_state_dict': self.decoder_module.state_dict()
-    })
+    }, path)
 
   def load_checkpoint(self, path, load_conv, load_encoder, load_decoder):
     """Load a checkpoint of the wrapper in modular fashion
