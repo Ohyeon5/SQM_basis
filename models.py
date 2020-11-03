@@ -26,6 +26,8 @@ class Wrapper(torch.nn.Module):
 
     return x
 
+  # TODO implement modular checkpoint
+  # TODO add structured saving and loading
   def save_checkpoint(self, path):
     """Save a checkpoint of the entire wrapper
 
