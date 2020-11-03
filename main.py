@@ -35,8 +35,7 @@ training_dl = DataLoader(training_dataset, batch_size=command_line_args.batch_si
 
 if (do_train_hand_gesture_classifier):
   print("Training end-to-end for hand gesture classification")
-  optimizer = torch.optim.Adam(model.parameters())
-  train_hand_gesture_classifier(model, optimizer, n_epochs, training_dl)
+  train_hand_gesture_classifier(model, n_epochs, training_dl)
 
 if (do_train_LR_vernier_classifier):
   print("Training end-to-end for L/R vernier classification")

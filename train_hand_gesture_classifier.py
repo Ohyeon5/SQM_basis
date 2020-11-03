@@ -1,14 +1,12 @@
 import torch
 
-def train_hand_gesture_classifier(model, optimizer, n_epochs, train_dl, criterion=torch.nn.CrossEntropyLoss()):
+def train_hand_gesture_classifier(model, n_epochs, train_dl, criterion=torch.nn.CrossEntropyLoss(), train_conv=True, train_encoder=True, train_decoder=True):
   """Train the provided model to perform hand gesture classification based on a frame sequence.
 
   Parameters
   ----------
   model : torch.nn.Module
       The model to train
-  optimizer : torch.optim.Optimizer
-      The optimizer to use
   n_epochs : int
       The number of epochs to train for
   train_dl : torch.utils.data.DataLoader
@@ -16,6 +14,23 @@ def train_hand_gesture_classifier(model, optimizer, n_epochs, train_dl, criterio
   criterion : function that takes two tensors and returns a float, optional
       The loss function to use
   """
+
+  # Freeze specified wrapper modules and select only trainable parameters for optimizer
+  trainable_parameters = list()
+  if train_conv:
+    for param in model.conv_module.parameters():
+      param.require_grad = False
+    trainable_parameters += list(model.conv_module.parameters())
+  if train_encoder:
+    for param in model.ecnoder_module.parameters():
+      param.require_grad = False
+    trainable_parameters += list(model.encoder_module.parameters())
+  if train_decoder:
+    for param in model.decoder_module.parameters():
+      param.require_grad = False
+    trainable_parameters += list(model.decoder_module.parameters())
+
+  optimizer = torch.optim.Adam(trainable_parameters)
 
   id_to_label = {0: "Swiping Left", 1: "Swiping Right"}
 
