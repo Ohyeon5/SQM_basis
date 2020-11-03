@@ -1,0 +1,11 @@
+#!/bin/bash
+#SBATCH --chdir /scratch/izar/cian/sqm_results
+#SBATCH --nodes 1
+#SBATCH --ntasks 1
+#SBATCH --cpus-per-task 1
+#SBATCH --partition=gpu
+#SBATCH --qos=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --mem 8192
+#SBATCH --time 1:00:00
+python "/home/cian/SQM_basis/main.py" --n-epochs 1 --batch-size 1 --training-data-path "/home/cian/sqm_data/train_hdf52.h5"
