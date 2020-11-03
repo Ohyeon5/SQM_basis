@@ -22,7 +22,7 @@ def train_hand_gesture_classifier(model, n_epochs, train_dl, criterion=torch.nn.
       param.require_grad = False
     trainable_parameters += list(model.conv_module.parameters())
   if train_encoder:
-    for param in model.ecnoder_module.parameters():
+    for param in model.encoder_module.parameters():
       param.require_grad = False
     trainable_parameters += list(model.encoder_module.parameters())
   if train_decoder:
