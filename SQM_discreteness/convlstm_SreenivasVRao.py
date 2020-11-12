@@ -9,6 +9,7 @@ HISTORY
 - 2020-09-29 (Oh-hyeon Choung) : enable num_layer == 1, thus kernal_size can be int now 
 - 2020-06-29 (Oh-hyeon Choung) : ConvLSTM._init_hidden() removed .cuda() part
 - 2020-07-10 (Oh-hyeon Choung) : Add 'device' argument in all classes 
+- 2020-11-12 (Cian David) : Modify device logic
 """
 
 import torch.nn as nn
@@ -20,11 +21,11 @@ class ConvLSTMCell(nn.Module):
     Basic CLSTM cell.
     """
 
-    def __init__(self, in_channels, hidden_channels, kernel_size, bias, device='cpu'):
-
+    def __init__(self, in_channels, hidden_channels, kernel_size, bias):
         super(ConvLSTMCell, self).__init__()
 
-        self.device = device
+        self.device = 'cpu'
+
         self.input_dim  = in_channels
         self.hidden_dim = hidden_channels
 
@@ -38,11 +39,16 @@ class ConvLSTMCell(nn.Module):
                               padding=self.padding,
                               bias=self.bias)
 
-    def forward(self, input_tensor, cur_state):
+    def _apply(self, fn):
+        super(ConvLSTMCell, self)._apply(fn)
         
+        self.delayed_apply_fn = fn
+
+    def forward(self, x, cur_state):    
         h_cur, c_cur = cur_state
+        h_cur, c_cur = self.delayed_apply_fn(h_cur), self.delayed_apply_fn(c_cur)
         
-        combined = torch.cat([input_tensor, h_cur], dim=1)  # concatenate along channel axis
+        combined = torch.cat([x, h_cur], dim=1)  # concatenate along channel axis
         
         combined_conv = self.conv(combined)
         cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1) 
@@ -57,14 +63,13 @@ class ConvLSTMCell(nn.Module):
         return h_next, c_next
 
     def init_hidden(self, b, h, w):
-        return (torch.zeros(b, self.hidden_dim, h, w).to(self.device),
-                torch.zeros(b, self.hidden_dim, h, w).to(self.device))
+        return torch.zeros(b, self.hidden_dim, h, w), torch.zeros(b, self.hidden_dim, h, w)
 
 
 class ConvLSTM(nn.Module):
 
     def __init__(self, in_channels, hidden_channels, kernel_size, num_layers,
-                 batch_first=False, bias=True, return_all_layers=False, device='cpu'):
+                 batch_first=False, bias=True, return_all_layers=False):
         super(ConvLSTM, self).__init__()
 
         self._check_kernel_size_consistency(kernel_size)
@@ -82,7 +87,6 @@ class ConvLSTM(nn.Module):
         self.batch_first = batch_first
         self.bias = bias
         self.return_all_layers = return_all_layers
-        self.device = device
 
         cell_list = []
         for i in range(0, self.num_layers):
@@ -91,7 +95,7 @@ class ConvLSTM(nn.Module):
             cell_list.append(ConvLSTMCell(in_channels=cur_input_dim,
                                           hidden_channels=self.hidden_dim[i],
                                           kernel_size=self.kernel_size[i],
-                                          bias=self.bias, device=self.device))
+                                          bias=self.bias))
 
         self.cell_list = nn.ModuleList(cell_list)
 
@@ -130,7 +134,7 @@ class ConvLSTM(nn.Module):
             output_inner = []
             for t in range(seq_len):
 
-                h, c = self.cell_list[layer_idx](input_tensor=cur_layer_input[:, t, :, :, :],
+                h, c = self.cell_list[layer_idx](x=cur_layer_input[:, t, :, :, :],
                                                  cur_state=[h, c])
                 output_inner.append(h)
 
@@ -168,15 +172,14 @@ class ConvLSTM(nn.Module):
 class ConvBLSTM(nn.Module):
     # Constructor
     def __init__(self, in_channels, hidden_channels,
-                 kernel_size, num_layers, bias=True, batch_first=False, device='cpu'):
+                 kernel_size, num_layers, bias=True, batch_first=False):
 
         super(ConvBLSTM, self).__init__()
 
-        self.device = device
         self.forward_net = ConvLSTM(in_channels, hidden_channels//2, kernel_size,
-                                    num_layers, batch_first=batch_first, bias=bias, device=self.device)
+                                    num_layers, batch_first=batch_first, bias=bias)
         self.reverse_net = ConvLSTM(in_channels, hidden_channels//2, kernel_size,
-                                    num_layers, batch_first=batch_first, bias=bias, device=self.device)
+                                    num_layers, batch_first=batch_first, bias=bias)
         
     def forward(self, xforward, xreverse):
         """

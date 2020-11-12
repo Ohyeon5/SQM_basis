@@ -1,6 +1,6 @@
 import torch
 
-def train_hand_gesture_classifier(model, n_epochs, train_dl, criterion=torch.nn.CrossEntropyLoss(), train_conv=True, train_encoder=True, train_decoder=True):
+def train_hand_gesture_classifier(model, n_epochs, train_dl, criterion=torch.nn.CrossEntropyLoss(), train_conv=True, train_encoder=True, train_decoder=True, device='cpu'):
   """Train the provided model to perform hand gesture classification based on a frame sequence.
 
   Parameters
@@ -30,6 +30,9 @@ def train_hand_gesture_classifier(model, n_epochs, train_dl, criterion=torch.nn.
       param.require_grad = False
     trainable_parameters += list(model.decoder_module.parameters())
 
+  # Move model to selected device
+  model.to(device)
+
   optimizer = torch.optim.Adam(trainable_parameters)
 
   id_to_label = {0: "Swiping Left", 1: "Swiping Right"}
@@ -38,15 +41,17 @@ def train_hand_gesture_classifier(model, n_epochs, train_dl, criterion=torch.nn.
     # The mean loss across mini-batches in the current epoch
     mean_loss = 0.0
     for i, batch in enumerate(train_dl):
-      # print("Batch image shape: {}".format(batch['images'][0].shape))
-      # print("Train image shape: {}".format(train_images[0].shape))
+      # Move label ids to selected device
+      label_ids = batch['label_id'].to(device)
+      # Stack images and move to selected device
+      images = torch.stack(batch['images'], 2).to(device) # stacked img: 5D tensor => B x C x T x H x W
       # Clear the gradients from the previous batch
       optimizer.zero_grad()
       # Compute the model outputs
-      predicted_hand_gestures = model(batch['images'])
+      predicted_hand_gestures = model(images)
       # print("Predicted hand gestures: {}".format(predicted_hand_gestures))
       # Compute the loss
-      loss = criterion(predicted_hand_gestures, batch['label_id'])
+      loss = criterion(predicted_hand_gestures, label_ids)
       # Compute the gradients
       loss.backward()
       # Update the model weights

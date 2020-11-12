@@ -24,7 +24,7 @@ class Net_disc_high(nn.Module):
 	'''
 
 	def __init__(self, n_classes, window, disc_type='simple', n_convBlocks=2, norm_type='bn', conv_n_feats=[3, 32, 64], 
-				 clstm_hidden=[128, 256], return_all_layers=True, device='cpu',
+				 clstm_hidden=[128, 256], return_all_layers=True,
 				 fc_n_hidden=None):
 		super(Net_disc_high, self).__init__()
 
@@ -32,7 +32,6 @@ class Net_disc_high(nn.Module):
 		self.disc_type    = disc_type	# 'simple' or 'redundant' is available in the moment
 		self.n_classes    = n_classes
 		self.window       = window
-		self.device       = device
 		self.conv_n_feats = conv_n_feats
 		self.clstm_hidden = clstm_hidden
 		if fc_n_hidden is None:
@@ -41,13 +40,13 @@ class Net_disc_high(nn.Module):
 			self.fc_n_hidden = fc_n_hidden
 
 		# primary convolution blocks for preprocessing and feature extraction
-		self.primary_conv3D = Primary_conv3D(n_convBlocks=n_convBlocks, norm_type=norm_type,conv_n_feats=self.conv_n_feats,device=self.device)
+		self.primary_conv3D = Primary_conv3D(n_convBlocks=n_convBlocks, norm_type=norm_type,conv_n_feats=self.conv_n_feats)
 
 		# Two layers of convLSTM
 		self.primary_convlstm   = ConvLSTM_block(in_channels=self.conv_n_feats[n_convBlocks],hidden_channels=self.clstm_hidden[0], 
-												 return_all_layers=True, device=self.device)
+												 return_all_layers=True)
 		self.secondary_convlstm = ConvLSTM_block(in_channels=self.clstm_hidden[0],hidden_channels=self.clstm_hidden[1], 
-												 return_all_layers=return_all_layers, device=self.device)
+												 return_all_layers=return_all_layers)
 		self.ff_classifier      = FF_classifier(in_channels=self.clstm_hidden[-1], n_classes=self.n_classes, 
 												hidden_channels=self.fc_n_hidden, norm_type=norm_type)
 
@@ -103,7 +102,7 @@ class Net_disc_low(nn.Module):
 	'''
 
 	def __init__(self, n_classes, window, disc_type='simple', n_convBlocks=2, norm_type='bn', conv_n_feats=[3, 32, 64], 
-				 clstm_hidden=[128, 256], return_all_layers=True, device='cpu',
+				 clstm_hidden=[128, 256], return_all_layers=True,
 				 fc_n_hidden=None):
 		super(Net_disc_low, self).__init__()
 
@@ -111,7 +110,6 @@ class Net_disc_low(nn.Module):
 		self.disc_type    = disc_type	# 'simple' or 'redundant' is available in the moment
 		self.n_classes    = n_classes
 		self.window       = window
-		self.device       = device
 		self.conv_n_feats = conv_n_feats
 		self.clstm_hidden = clstm_hidden
 		if fc_n_hidden is None:
@@ -120,13 +118,13 @@ class Net_disc_low(nn.Module):
 			self.fc_n_hidden = fc_n_hidden
 
 		# primary convolution blocks for preprocessing and feature extraction
-		self.primary_conv3D = Primary_conv3D(n_convBlocks=n_convBlocks, norm_type=norm_type,conv_n_feats=self.conv_n_feats,device=self.device)
+		self.primary_conv3D = Primary_conv3D(n_convBlocks=n_convBlocks, norm_type=norm_type,conv_n_feats=self.conv_n_feats)
 
 		# Two layers of convLSTM
 		self.primary_convlstm   = ConvLSTM_block(in_channels=self.conv_n_feats[n_convBlocks],hidden_channels=self.clstm_hidden[0], 
-												 return_all_layers=True, device=self.device)
+												 return_all_layers=True)
 		self.secondary_convlstm = ConvLSTM_block(in_channels=self.clstm_hidden[0],hidden_channels=self.clstm_hidden[1], 
-												 return_all_layers=return_all_layers, device=self.device)
+												 return_all_layers=return_all_layers)
 		self.ff_classifier      = FF_classifier(in_channels=self.clstm_hidden[-1], n_classes=self.n_classes, 
 												hidden_channels=self.fc_n_hidden, norm_type=norm_type)
 
@@ -181,12 +179,11 @@ class Net_disc_low(nn.Module):
 class Net_continuous(nn.Module):
 
 	def __init__(self, n_classes, n_convBlocks=2, norm_type='bn', conv_n_feats=[3, 32, 64], 
-				 clstm_hidden=[128, 256], return_all_layers=True, device='cpu',
+				 clstm_hidden=[128, 256], return_all_layers=True,
 				 fc_n_hidden=None):
 		super(Net_continuous, self).__init__()
 
 		# initial parameter settings
-		self.device = device
 		self.conv_n_feats = conv_n_feats
 		self.clstm_hidden = clstm_hidden
 		self.n_classes    = n_classes
@@ -196,17 +193,13 @@ class Net_continuous(nn.Module):
 			self.fc_n_hidden = fc_n_hidden
 
 		# primary convolution blocks for preprocessing and feature extraction
-		self.primary_conv3D = Primary_conv3D(n_convBlocks=n_convBlocks, norm_type=norm_type,conv_n_feats=self.conv_n_feats,device=self.device)
+		self.primary_conv3D = Primary_conv3D(n_convBlocks=n_convBlocks, norm_type=norm_type,conv_n_feats=self.conv_n_feats)
 
 		# Two layers of convLSTM
-		# self.primary_convlstm   = ConvLSTM_block(in_channels=self.conv_n_feats[n_convBlocks],hidden_channels=self.clstm_hidden[0], 
-		# 										 return_all_layers=True, device=self.device)
-		# self.secondary_convlstm = ConvLSTM_block(in_channels=self.clstm_hidden[0],hidden_channels=self.clstm_hidden[1], 
-		# 										 return_all_layers=return_all_layers, device=self.device)
 		self.convlstm   = ConvLSTM(in_channels=self.conv_n_feats[n_convBlocks], 
 			                       hidden_channels=self.clstm_hidden, kernel_size=(3,3),
 								   num_layers=2, batch_first=True, 
-								   bias=True, return_all_layers=return_all_layers, device=self.device)
+								   bias=True, return_all_layers=return_all_layers)
 		
 		self.ff_classifier      = FF_classifier(in_channels=self.clstm_hidden[-1], n_classes=self.n_classes, 
 												hidden_channels=self.fc_n_hidden, norm_type=norm_type)
@@ -237,11 +230,10 @@ class Primary_conv3D(nn.Module):
 	'''
 	Primary feedforward feature extraction convolution layers 
 	'''
-	def __init__(self, n_convBlocks=2, norm_type='bn',conv_n_feats=[3, 32, 64],device='cpu'):
+	def __init__(self, n_convBlocks=2, norm_type='bn',conv_n_feats=[3, 32, 64]):
 		super(Primary_conv3D, self).__init__()
 
 		# initial parameter settings
-		self.device = device
 		self.conv_n_feats = conv_n_feats
 
 		# primary convolution blocks for preprocessing and feature extraction
@@ -254,27 +246,24 @@ class Primary_conv3D(nn.Module):
 
 	def forward(self, x):	
 		# arg: x is a list of images
-		# Stack to 5D layer and then pass 5d (BxCxTxHxW) to primaryConv3D and transpose it to BxTxCxHxW
+		
+		x = self.primary_conv3D(x)
+		x = torch.transpose(x, 2, 1)  # Transpose B x C x T x H x W --> B x T x C x H x W
 
-		img = torch.stack(x,2).to(self.device) # stacked img: 5D tensor => B x C x T x H x W
-		# print("Img shape in conv: {}".format(img.shape))
-		img = self.primary_conv3D(img)
-		img = torch.transpose(img,2,1)  # Transpose B x C x T x H x W --> B x T x C x H x W
-
-		return img		
+		return x		
 
 # 2) Primary and Secondary convLSTMs
 class ConvLSTM_block(nn.Module):
 	'''
 	ConvLSTM blocks 
 	'''
-	def __init__(self, in_channels, hidden_channels, kernel_size=(3,3), num_layers=1, return_all_layers=True, device='cpu'):
+	def __init__(self, in_channels, hidden_channels, kernel_size=(3,3), num_layers=1, return_all_layers=True):
 		super(ConvLSTM_block, self).__init__()
 
 
 		self.convlstm_block   = ConvLSTM(in_channels=in_channels, hidden_channels=hidden_channels, 
 										   kernel_size=kernel_size, num_layers=num_layers, bias=True, 
-										   batch_first=True, return_all_layers=return_all_layers, device=device)
+										   batch_first=True, return_all_layers=return_all_layers)
 
 	def forward(self, x):	
 		# arg: x is a 5D tensor => B x T x Filters x H x W
@@ -291,20 +280,19 @@ class ConvLSTM_disc_low(nn.Module):
 	'''
 
 	def __init__(self, window, disc_type='simple',
-		         clstm_hidden=[64, 128, 256], return_all_layers=False, device='cpu'):
+		         clstm_hidden=[64, 128, 256], return_all_layers=False):
 		super(ConvLSTM_disc_low, self).__init__()
 
 		# initial parameter settings
 		self.disc_type    = disc_type	# 'simple' or 'redundant' is available in the moment
 		self.window       = window
-		self.device       = device
 		self.clstm_hidden = clstm_hidden
 
 		# Two layers of convLSTM
 		self.primary_convlstm   = ConvLSTM_block(in_channels=self.clstm_hidden[0],hidden_channels=self.clstm_hidden[1], 
-												 return_all_layers=False, device=self.device)
+												 return_all_layers=False)
 		self.secondary_convlstm = ConvLSTM_block(in_channels=self.clstm_hidden[1],hidden_channels=self.clstm_hidden[2], 
-												 return_all_layers=return_all_layers, device=self.device)
+												 return_all_layers=return_all_layers)
 
 	def forward(self,x):
 		if self.disc_type is 'simple':
@@ -362,20 +350,19 @@ class ConvLSTM_disc_high(nn.Module):
 	'''
 
 	def __init__(self, window, disc_type='simple', 
-				 clstm_hidden=[64, 128, 256], return_all_layers=False, device='cpu'):
+				 clstm_hidden=[64, 128, 256], return_all_layers=False):
 		super(ConvLSTM_disc_high, self).__init__()
 
 		# initial parameter settings
 		self.disc_type    = disc_type	# 'simple' or 'redundant' is available in the moment
 		self.window       = window
-		self.device       = device
 		self.clstm_hidden = clstm_hidden
 		
 		# Two layers of convLSTM
 		self.primary_convlstm   = ConvLSTM_block(in_channels=self.clstm_hidden[0],hidden_channels=self.clstm_hidden[1], 
-												 return_all_layers=False, device=self.device)
+												 return_all_layers=False)
 		self.secondary_convlstm = ConvLSTM_block(in_channels=self.clstm_hidden[1],hidden_channels=self.clstm_hidden[2], 
-												 return_all_layers=return_all_layers, device=self.device)
+												 return_all_layers=return_all_layers)
 		
 	def forward(self,x):
 		if self.disc_type is 'simple':
