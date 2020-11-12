@@ -26,7 +26,7 @@ command_line_args = arg_parser.parse_args()
 
 do_train_hand_gesture_classifier = True
 do_train_LR_vernier_classifier = False
-model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(4), FF_classifier(256, 2, hidden_channels=10))
+model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(4), FF_classifier(256, 2, hidden_channels=64))
 n_epochs = command_line_args.n_epochs
 # Set up the dataset
 print("Loading the training dataset")

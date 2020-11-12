@@ -416,11 +416,13 @@ class FF_classifier(nn.Module):
 		else: 
 			self.hidden_channels = hidden_channels
 
-		self.avgpool    = nn.AdaptiveAvgPool2d((2, 2))
+		avg_pool_size = (4, 4)
+
+		self.avgpool    = nn.AdaptiveAvgPool2d(avg_pool_size)
 		self.norm_layer = define_norm(in_channels,norm_type,dim_mode=2)
 		self.classifier = nn.Sequential(
 			nn.Dropout(),
-			nn.Linear(2*2*in_channels, hidden_channels),
+			nn.Linear(avg_pool_size[0]*avg_pool_size[1]*in_channels, hidden_channels),
 			nn.ReLU(inplace=True),
 			nn.Dropout(),
 			nn.Linear(hidden_channels, n_classes))
@@ -428,14 +430,10 @@ class FF_classifier(nn.Module):
 	def forward(self, x):	
 		# arg: x is a 4D tensor B x C x H x W
 
-		# print("Input shape to FF classifier: {}".format(x.shape))
-
 		x = self.avgpool(x)
 		if self.norm_layer is not None:
 			x = self.norm_layer(x)
 		x = x.contiguous().view(x.shape[0],-1)
-
-		# print("Input shape to classifier: {}".format(x.shape))
 
 		x = self.classifier(x)
 
