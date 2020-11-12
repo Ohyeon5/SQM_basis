@@ -18,17 +18,20 @@ def train_hand_gesture_classifier(model, n_epochs, train_dl, criterion=torch.nn.
   # Freeze specified wrapper modules and select only trainable parameters for optimizer
   trainable_parameters = list()
   if train_conv:
+    trainable_parameters += list(model.conv_module.parameters())
+  else:
     for param in model.conv_module.parameters():
       param.require_grad = False
-    trainable_parameters += list(model.conv_module.parameters())
   if train_encoder:
+    trainable_parameters += list(model.encoder_module.parameters())
+  else:
     for param in model.encoder_module.parameters():
       param.require_grad = False
-    trainable_parameters += list(model.encoder_module.parameters())
   if train_decoder:
+    trainable_parameters += list(model.decoder_module.parameters())
+  else:
     for param in model.decoder_module.parameters():
       param.require_grad = False
-    trainable_parameters += list(model.decoder_module.parameters())
 
   # Move model to selected device
   model.to(device)
