@@ -37,6 +37,7 @@ def train_hand_gesture_classifier(model, n_epochs, train_dl, criterion=torch.nn.
   model.to(device)
 
   optimizer = torch.optim.Adam(trainable_parameters)
+  # optimizer = torch.optim.SGD(trainable_parameters, lr=1)
 
   id_to_label = {0: "Swiping Left", 1: "Swiping Right"}
 
