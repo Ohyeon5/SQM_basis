@@ -230,7 +230,7 @@ class Primary_conv3D(nn.Module):
 	'''
 	Primary feedforward feature extraction convolution layers 
 	'''
-	def __init__(self, n_convBlocks=2, norm_type='bn',conv_n_feats=[3, 32, 64]):
+	def __init__(self, norm_type='bn',conv_n_feats=[3, 32, 64]):
 		super(Primary_conv3D, self).__init__()
 
 		# initial parameter settings
@@ -238,7 +238,7 @@ class Primary_conv3D(nn.Module):
 
 		# primary convolution blocks for preprocessing and feature extraction
 		layers = []
-		for ii in range(n_convBlocks): 
+		for ii in range(len(conv_n_feats) - 1): 
 			block = Conv3D_Block(self.conv_n_feats[ii],self.conv_n_feats[ii+1],norm_type=norm_type)
 			layers.append(block)
 
