@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import os
 import torch
 
 class Wrapper(torch.nn.Module):
@@ -63,3 +65,34 @@ class Wrapper(torch.nn.Module):
       self.encoder_module.load_state_dict(checkpoint['encoder_module_state_dict'])
     if load_decoder:
       self.decoder_module.load_state_dict(checkpoint['decoder_module_state_dict'])
+
+  def show_conv_filter(self, conv_layer, fname, in_channel=0, out_channel=0):
+    fig, ax = plt.subplots()
+
+    # WARNING: detached tensors still share storage with original tensor
+    conv_filter_weights = conv_layer.weight.detach()
+    # print("Shape of first conv layer: {}".format(conv_filter_weights.shape))
+
+    # conv_n_feats[layer_idx + 1], conv_n_feats[layer_idx], 1, kernel_size[1]=3, kernel_size[2]=3 -> Why are we not making use of Conv3D as specified (kernel_size[0] = 1)?
+    # print("Shape of very first conv filter: {}".format(conv_filter_weights[0][0].shape))
+    first_kernel = conv_filter_weights[out_channel][in_channel][0]
+    # print("Very first conv filter: {}".format(first_kernel))
+    # Normalize kernel values
+    first_kernel = (first_kernel - torch.min(first_kernel)) / (torch.max(first_kernel) - torch.min(first_kernel))
+    # print("Very first conv filter normalized: {}".format(first_kernel))
+
+    ax.imshow(first_kernel, cmap='gray', vmin=0, vmax=1)
+
+    if not os.path.exists("conv_filters"):
+      os.makedirs("conv_filters")
+
+    fig.savefig("conv_filters/{}".format(fname))
+
+    plt.close(fig)
+
+  def show_conv_layer_filters(self, layer_idx=0):
+    conv_layer = self.conv_module.primary_conv3D[layer_idx].conv
+
+    for in_channel in range(conv_layer.weight.shape[1]):
+      for out_channel in range(conv_layer.weight.shape[0]):
+        self.show_conv_filter(conv_layer, "conv_in{}_out{}".format(in_channel, out_channel), in_channel=in_channel, out_channel=out_channel)
