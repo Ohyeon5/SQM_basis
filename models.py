@@ -66,22 +66,42 @@ class Wrapper(torch.nn.Module):
     if load_decoder:
       self.decoder_module.load_state_dict(checkpoint['decoder_module_state_dict'])
 
+  def show_conv_filter_rgb(self, conv_layer, fname, out_channel=0):
+    fig, ax = plt.subplots()
+
+    # WARNING: detached tensors still share storage with original tensor
+    conv_filter_weights = conv_layer.weight.detach().cpu()
+
+    kernel = conv_filter_weights[out_channel].clone().transpose(0, 1)[0]
+    # print("Conv filter: {} of shape {}".format(kernel, kernel.shape))
+
+    kernel = (kernel - torch.min(kernel)) / (torch.max(kernel) - torch.min(kernel))
+
+    ax.imshow(kernel, vmin=0, vmax=1)
+
+    if not os.path.exists("conv_filters"):
+      os.makedirs("conv_filters")
+
+    fig.savefig("conv_filters/{}".format(fname))
+
+    plt.close(fig)
+
   def show_conv_filter(self, conv_layer, fname, in_channel=0, out_channel=0):
     fig, ax = plt.subplots()
 
     # WARNING: detached tensors still share storage with original tensor
-    conv_filter_weights = conv_layer.weight.detach()
+    conv_filter_weights = conv_layer.weight.detach().cpu()
     # print("Shape of first conv layer: {}".format(conv_filter_weights.shape))
 
     # conv_n_feats[layer_idx + 1], conv_n_feats[layer_idx], 1, kernel_size[1]=3, kernel_size[2]=3 -> Why are we not making use of Conv3D as specified (kernel_size[0] = 1)?
     # print("Shape of very first conv filter: {}".format(conv_filter_weights[0][0].shape))
-    first_kernel = conv_filter_weights[out_channel][in_channel][0]
+    kernel = conv_filter_weights[out_channel][in_channel][0]
     # print("Very first conv filter: {}".format(first_kernel))
     # Normalize kernel values
-    first_kernel = (first_kernel - torch.min(first_kernel)) / (torch.max(first_kernel) - torch.min(first_kernel))
+    kernel = (kernel - torch.min(kernel)) / (torch.max(kernel) - torch.min(kernel))
     # print("Very first conv filter normalized: {}".format(first_kernel))
 
-    ax.imshow(first_kernel, cmap='gray', vmin=0, vmax=1)
+    ax.imshow(kernel, cmap='gray', vmin=0, vmax=1)
 
     if not os.path.exists("conv_filters"):
       os.makedirs("conv_filters")
@@ -93,6 +113,7 @@ class Wrapper(torch.nn.Module):
   def show_conv_layer_filters(self, layer_idx=0):
     conv_layer = self.conv_module.primary_conv3D[layer_idx].conv
 
-    for in_channel in range(conv_layer.weight.shape[1]):
-      for out_channel in range(conv_layer.weight.shape[0]):
+    for out_channel in range(conv_layer.weight.shape[0]):
+      self.show_conv_filter_rgb(conv_layer, "conv_out{}".format(out_channel), out_channel=out_channel)
+      for in_channel in range(conv_layer.weight.shape[1]):
         self.show_conv_filter(conv_layer, "conv_in{}_out{}".format(in_channel, out_channel), in_channel=in_channel, out_channel=out_channel)

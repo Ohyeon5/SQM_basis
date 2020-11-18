@@ -35,8 +35,8 @@ training_dl = DataLoader(training_dataset, batch_size=command_line_args.batch_si
 
 if (do_train_hand_gesture_classifier):
   print("Training end-to-end for hand gesture classification")
-  # train_hand_gesture_classifier(model, n_epochs, training_dl, device='cuda')
-  model.show_conv_layer_filters()
+  train_hand_gesture_classifier(model, n_epochs, training_dl, device='cuda')
+  # model.show_conv_layer_filters()
 
 if (do_train_LR_vernier_classifier):
   print("Training end-to-end for L/R vernier classification")
