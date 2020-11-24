@@ -416,7 +416,7 @@ class FF_classifier(nn.Module):
 		else: 
 			self.hidden_channels = hidden_channels
 
-		avg_pool_size = (4, 4)
+		avg_pool_size = (4, 4) # tunable
 
 		self.avgpool    = nn.AdaptiveAvgPool2d(avg_pool_size)
 		self.norm_layer = define_norm(in_channels,norm_type,dim_mode=2)
