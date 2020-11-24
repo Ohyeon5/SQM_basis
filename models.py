@@ -28,9 +28,8 @@ class Wrapper(torch.nn.Module):
 
     return x
 
-  # TODO implement modular checkpoint
   # TODO add structured saving and loading
-  def save_checkpoint(self, path):
+  def save_checkpoint(self, path, save_conv = True, save_encoder = True, save_decoder = True):
     """Save a checkpoint of the entire wrapper
 
     Parameters
@@ -38,13 +37,18 @@ class Wrapper(torch.nn.Module):
     path : str
         The path to the checkpoint file, .tar extension
     """
-    torch.save({
-      'conv_module_state_dict': self.conv_module.state_dict(),
-      'encoder_module_state_dict': self.encoder_module.state_dict(),
-      'decoder_module_state_dict': self.decoder_module.state_dict()
-    }, path)
+    checkpoint = {}
 
-  def load_checkpoint(self, path, load_conv, load_encoder, load_decoder):
+    if save_conv:
+      checkpoint['conv_module_state_dict'] = self.conv_module.state_dict()
+    if save_encoder:
+      checkpoint['encoder_module_state_dict'] = self.encoder_module.state_dict()
+    if save_decoder:
+      checkpoint['decoder_module_state_dict'] = self.decoder_module.state_dict()
+
+    torch.save(checkpoint, path)
+
+  def load_checkpoint(self, path, load_conv = True, load_encoder = True, load_decoder = True):
     """Load a checkpoint of the wrapper in modular fashion
 
     Parameters
