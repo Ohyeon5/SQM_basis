@@ -3,3 +3,7 @@
 
 # Virtual environments
 venvs/*
+
+# Dataset
+*.csv
+*.npz
