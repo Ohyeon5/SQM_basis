@@ -11,8 +11,9 @@ the model labels the sequence as a left or right vernier
 
 import argparse
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, IterableDataset
 from train_hand_gesture_classifier import train_hand_gesture_classifier
+from train_LR_vernier_classifier import train_LR_vernier_classifier
 from models import Wrapper
 from SQM_discreteness.models import Primary_conv3D, ConvLSTM_disc_low, ConvLSTM_disc_high, FF_classifier
 from SQM_discreteness.hdf5_loader import HDF5Dataset, ToTensor
@@ -24,17 +25,18 @@ arg_parser.add_argument('--training-data-path', type=str)
 
 command_line_args = arg_parser.parse_args()
 
-do_train_hand_gesture_classifier = True
-do_train_LR_vernier_classifier = False
+do_train_hand_gesture_classifier = False
+do_train_LR_vernier_classifier = True
 model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(1), FF_classifier(256, 2, hidden_channels=64))
 n_epochs = command_line_args.n_epochs
-# Set up the dataset
-print("Loading the training dataset")
-training_dataset = HDF5Dataset(command_line_args.training_data_path, transform=ToTensor())
-training_dl = DataLoader(training_dataset, batch_size=command_line_args.batch_size, shuffle=False, drop_last=False)
 
 if (do_train_hand_gesture_classifier):
   print("Training end-to-end for hand gesture classification")
+  # Set up the dataset
+  print("Loading the training dataset")
+  training_dataset = HDF5Dataset(command_line_args.training_data_path, transform=ToTensor())
+  training_dl = DataLoader(training_dataset, batch_size=command_line_args.batch_size, shuffle=False, drop_last=False)
+
   model.load_checkpoint("latest_checkpoint.tar")
   train_hand_gesture_classifier(model, n_epochs, training_dl, device='cuda')
   model.save_checkpoint("latest_checkpoint.tar")
@@ -42,4 +44,10 @@ if (do_train_hand_gesture_classifier):
 
 if (do_train_LR_vernier_classifier):
   print("Training end-to-end for L/R vernier classification")
-  # TODO implement
+  # Set up the dataset
+  print("Loading the training dataset")
+
+  model.load_checkpoint("latest_checkpoint.tar")
+  # TODO freeze encoder in the method before starting training
+  train_LR_vernier_classifier(model, n_epochs)
+  model.save_checkpoint("latest_checkpoint_phase2.tar")

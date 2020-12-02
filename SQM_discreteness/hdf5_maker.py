@@ -9,6 +9,15 @@ from tqdm import tqdm
 
 
 def resize_images(image_list, im_size):
+    """Resize a list of images to a given size.
+    
+    Parameters
+    ----------
+    image_list : list
+      A list of images to resize, in any format supported by PIL
+    im_size : int
+      The side length of the resized images
+    """
     return_list = []
     for im in image_list:
         img = Image.open(im)
@@ -29,6 +38,23 @@ def create_image_label_list(img_path, group, im_size, skip, all_labels):
 
 
 def make_hdf5(img_path, im_size, skip, all_labels, desired_labels, fname='data_hdf5.h5'):
+    """Make an HDF5 file from a directory of images.
+    
+    Parameters
+    ----------
+    img_path : str
+      The path of the folder containing the images
+    im_size : int
+      The side length to give the output images
+    skip : int
+      The number of images to skip over before adding a new image
+    all_labels : DataFrame
+      ???
+    desired_labels : ???
+      ???
+    fname : str
+      The name of the HDF5 file to output
+    """
     indices = list(all_labels[all_labels['label'].isin(desired_labels)].index)
     hf = h5py.File(fname, 'w')
     for group in tqdm(indices):
