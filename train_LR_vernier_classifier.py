@@ -62,7 +62,7 @@ def train_LR_vernier_classifier(model, n_epochs, epoch_size, batch_size, criteri
 
       print("Loss after batch {}: {}".format(batch_idx, loss))
 
-    mean_loss /= len(batches_per_epoch)
+    mean_loss /= batches_per_epoch
 
     print("Loss after epoch {}: {}".format(epoch, mean_loss))
 
