@@ -461,6 +461,7 @@ class Conv3D_Block(nn.Module):
 
 	def forward(self,x):
 
+		#print(x.type())
 		x = self.conv(x)
 		x = self.relu(x)
 		x = self.maxpool(x)
