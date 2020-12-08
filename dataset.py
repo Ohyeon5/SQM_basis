@@ -214,18 +214,18 @@ class BatchMaker():
 # Show example of reconstruction batch
 if __name__ == '__main__':
 
-  # import pyglet   # conda install -c conda-forge pyglet
-  # import imageio  # conda install -c conda-forge imageio
-  # import os
+  import pyglet   # conda install -c conda-forge pyglet
+  import imageio  # conda install -c conda-forge imageio
+  import os
   from numpy import savez, savetxt
   set_type     = 'decode'    # 'recons', 'decode' or 'sqm'
   condition    = 'V-PV3'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 2
   n_frames     = 13
   scale        = 2
-  batch_s      = 1000
+  batch_s      = 4
   n_channels   = 3
-  batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, 1), condition)
+  batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, n_channels), condition)
   if set_type == 'recons':
   	batch_frames = batch_maker.generate_batch()
   else:
@@ -235,18 +235,18 @@ if __name__ == '__main__':
   
   savez('val_vernier_{}.npz'.format(batch_s), consolidated_array)
   savetxt('val_vernier_{}_labels.csv'.format(batch_s), batch_labels)
-  # gif_name        = 'test_output.gif'
-  # display_frames  = []
-  # for t in range(n_frames):
-  	# display_frames.append(np.hstack([batch_frames[t][b] for b in range(batch_s)]))
-  # imageio.mimsave(gif_name, display_frames, duration=0.1)
-  # anim   = pyglet.resource.animation(gif_name)
-  # sprite = pyglet.sprite.Sprite(anim)
-  # window = pyglet.window.Window(width=sprite.width, height=sprite.height)
-  # window.set_location(600, 300)
-  # @window.event
-  # def on_draw():
-  	# window.clear()
-  	# sprite.draw()
-  # pyglet.app.run()
-  # os.remove(gif_name)
+  gif_name        = 'test_output.gif'
+  display_frames  = []
+  for t in range(n_frames):
+  	display_frames.append(np.hstack([batch_frames[t][b] for b in range(batch_s)]))
+  imageio.mimsave(gif_name, display_frames, duration=0.1)
+  anim   = pyglet.resource.animation(gif_name)
+  sprite = pyglet.sprite.Sprite(anim)
+  window = pyglet.window.Window(width=sprite.width, height=sprite.height)
+  window.set_location(600, 300)
+  @window.event
+  def on_draw():
+  	window.clear()
+  	sprite.draw()
+  pyglet.app.run()
+  os.remove(gif_name)
