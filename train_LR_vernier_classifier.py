@@ -1,12 +1,24 @@
 import numpy as np
 import torch
+import gc
 
 from dataset import BatchMaker
+
+def profile_gpu(detailed=False):
+  # print("Profiling GPU memory usage")
+  print("Total GPU memory occupied: {}".format(torch.cuda.memory_allocated()))
+  if detailed:
+    for obj in gc.get_objects():
+      try:
+        if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+          print(type(obj), obj.size(), obj.element_size() * obj.nelement())
+      except:
+        pass
 
 def train_LR_vernier_classifier(model, n_epochs, epoch_size, batch_size, criterion=torch.nn.CrossEntropyLoss(), train_conv=True, train_encoder=False, train_decoder=True, device='cpu'):
   n_objects = 2
   n_frames = 13
-  scale = 2
+  scale = 1
   n_channels = 3
   batch_maker = BatchMaker('decode', n_objects, batch_size, n_frames, (64*scale, 64*scale, n_channels), None)
 
