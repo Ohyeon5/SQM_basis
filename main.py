@@ -49,5 +49,5 @@ if (do_train_LR_vernier_classifier):
 
   model.load_checkpoint("latest_checkpoint.tar")
   # TODO freeze encoder in the method before starting training
-  train_LR_vernier_classifier(model, n_epochs, 1000, 2, device='cuda')
+  train_LR_vernier_classifier(model, n_epochs, 1000, command_line_args.batch_size, train_encoder=True, device='cuda')
   model.save_checkpoint("latest_checkpoint_phase2.tar")

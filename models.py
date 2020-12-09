@@ -70,6 +70,8 @@ class Wrapper(torch.nn.Module):
     if load_decoder:
       self.decoder_module.load_state_dict(checkpoint['decoder_module_state_dict'])
 
+    del checkpoint
+
   def show_conv_filter_rgb(self, conv_layer, fname, out_channel=0):
     fig, ax = plt.subplots()
 

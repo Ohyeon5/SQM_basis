@@ -222,7 +222,7 @@ if __name__ == '__main__':
   condition    = 'V-PV3'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 2
   n_frames     = 13
-  scale        = 2
+  scale        = 1
   batch_s      = 4
   n_channels   = 3
   batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, n_channels), condition)

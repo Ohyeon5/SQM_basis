@@ -9,6 +9,8 @@ import torch.nn.functional as F
 
 from SQM_discreteness.convlstm_SreenivasVRao import *
 
+from train_LR_vernier_classifier import profile_gpu
+
 
 ###############
 #   Networks  #
@@ -267,6 +269,8 @@ class ConvLSTM_block(nn.Module):
 
 	def forward(self, x):	
 		# arg: x is a 5D tensor => B x T x Filters x H x W
+		# print("Profile GPU in forward of convlstm block")
+		# profile_gpu()
 		x, _ = self.convlstm_block(x) 
 		return x
 
@@ -329,6 +333,8 @@ class ConvLSTM_disc_low(nn.Module):
 			imgs.append(mm[0][:,-1,:,:,:])
 		img = torch.stack(imgs,1) # stacked img: 5D tensor => B x T x C x H x W
 		
+		# print("Profile GPU in convlstm disc low")
+		# profile_gpu()
 		img = self.secondary_convlstm(img)  	# img: 5D tensor => B x T x Filters x H x W  
 
 		# print("Shape of secondary convlstm output: len {}, shape {}".format(len(img), img[0].shape))
