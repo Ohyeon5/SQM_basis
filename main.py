@@ -30,6 +30,7 @@ arg_parser = argparse.ArgumentParser(description='Train a deep learning model fo
 arg_parser.add_argument('--n-epochs', type=int)
 arg_parser.add_argument('--batch-size', type=int)
 arg_parser.add_argument('--training-data-path', type=str)
+arg_parser.add_argument('--wandb-notes', type=str)
 
 command_line_args = arg_parser.parse_args()
 
@@ -54,7 +55,7 @@ if (do_train_hand_gesture_classifier):
 if (do_train_LR_vernier_classifier):
   print("Training end-to-end for L/R vernier classification")
 
-  wandb.init(project="lr-vernier-classification", config={
+  wandb.init(project="lr-vernier-classification", notes=command_line_args.wandb_notes if command_line_args.wandb_notes else "N/A", config={
     "num_batches": 10,
     "batch_size": command_line_args.batch_size
   })
