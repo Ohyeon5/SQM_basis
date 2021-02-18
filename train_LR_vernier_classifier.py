@@ -70,6 +70,8 @@ def train_LR_vernier_classifier(model, batches, n_batches, criterion=torch.nn.Cr
 
   accuracy_buffer = []
 
+  wandb.watch(model)
+
   for batch_idx in range(n_batches):
     # The mean loss across mini-batches in the current epoch
     total_loss = 0.0

@@ -18,8 +18,6 @@ from models import Wrapper
 from SQM_discreteness.models import Primary_conv3D, ConvLSTM_disc_low, ConvLSTM_disc_high, FF_classifier
 from SQM_discreteness.hdf5_loader import HDF5Dataset, ToTensor
 
-from dataset import BatchMaker
-
 import numpy as np
 
 from train_test import train_test
@@ -60,27 +58,6 @@ if (do_train_LR_vernier_classifier):
     "batch_size": command_line_args.batch_size
   })
   config = wandb.config
-
-  # Set up the dataset
-  print("Creating a batch maker")
-
-  n_objects = 1
-  n_frames = 2
-  scale = 1
-  n_channels = 3
-  batch_maker = BatchMaker('decode', n_objects, command_line_args.batch_size, n_frames, (64*scale, 64*scale, n_channels), None)
-
-  print("Generating batches")
-
-  batches = []
-  for batch_idx in range(config.num_batches):
-    batch_frames, batch_labels = batch_maker.generate_batch()
-    batch_labels_opposite = 1 - batch_labels
-    batch_labels = np.vstack((batch_labels_opposite, batch_labels)).T
-
-    batches.append((batch_frames, batch_labels))
-
-  print("Done generating batches")
 
   # model.load_checkpoint("latest_checkpoint.tar", load_conv=False, load_encoder=False, load_decoder=False)
   # TODO freeze encoder in the method before starting training
