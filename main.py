@@ -18,6 +18,14 @@ from models import Wrapper
 from SQM_discreteness.models import Primary_conv3D, ConvLSTM_disc_low, ConvLSTM_disc_high, FF_classifier
 from SQM_discreteness.hdf5_loader import HDF5Dataset, ToTensor
 
+from dataset import BatchMaker
+
+import numpy as np
+
+from train_test import train_test
+
+import wandb
+
 arg_parser = argparse.ArgumentParser(description='Train a deep learning model for various tasks')
 arg_parser.add_argument('--n-epochs', type=int)
 arg_parser.add_argument('--batch-size', type=int)
@@ -27,6 +35,7 @@ command_line_args = arg_parser.parse_args()
 
 do_train_hand_gesture_classifier = False
 do_train_LR_vernier_classifier = True
+# TODO also vary hidden channels
 model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(1), FF_classifier(256, 2, hidden_channels=64))
 n_epochs = command_line_args.n_epochs
 
@@ -44,10 +53,65 @@ if (do_train_hand_gesture_classifier):
 
 if (do_train_LR_vernier_classifier):
   print("Training end-to-end for L/R vernier classification")
-  # Set up the dataset
-  print("Loading the training dataset")
 
-  model.load_checkpoint("latest_checkpoint.tar")
+  wandb.init(project="lr-vernier-classification", config={
+    "num_batches": 10,
+    "batch_size": command_line_args.batch_size
+  })
+  config = wandb.config
+
+  # Set up the dataset
+  print("Creating a batch maker")
+
+  n_objects = 1
+  n_frames = 2
+  scale = 1
+  n_channels = 3
+  batch_maker = BatchMaker('decode', n_objects, command_line_args.batch_size, n_frames, (64*scale, 64*scale, n_channels), None)
+
+  print("Generating batches")
+
+  batches = []
+  for batch_idx in range(config.num_batches):
+    batch_frames, batch_labels = batch_maker.generate_batch()
+    batch_labels_opposite = 1 - batch_labels
+    batch_labels = np.vstack((batch_labels_opposite, batch_labels)).T
+
+    batches.append((batch_frames, batch_labels))
+
+  print("Done generating batches")
+
+  # model.load_checkpoint("latest_checkpoint.tar", load_conv=False, load_encoder=False, load_decoder=False)
   # TODO freeze encoder in the method before starting training
-  train_LR_vernier_classifier(model, n_epochs, 1000, command_line_args.batch_size, train_encoder=True, device='cuda')
-  model.save_checkpoint("latest_checkpoint_phase2.tar")
+  train_LR_vernier_classifier(model, batches, 1000, criterion=torch.nn.BCELoss(), train_conv=False, train_encoder=False, device='cuda')
+
+  wandb.finish()
+  #model.show_conv_layer_filters()
+  # model.save_checkpoint("latest_checkpoint_phase2.tar")
+
+class TestNet(torch.nn.Module):
+  def __init__(self):
+    super(TestNet, self).__init__()
+
+    self.network = torch.nn.Sequential(torch.nn.Linear(1, 512), torch.nn.ReLU(), torch.nn.Linear(512, 512), torch.nn.ReLU(), torch.nn.Linear(512, 1))
+
+  def forward(self, x):
+    return self.network(x)
+
+test_net = TestNet()
+
+class TestBatchMaker():
+  def __init__(self):
+    pass
+
+  def generate_batch(self, batch_size):
+    batch_x = np.random.randn(batch_size) * 100
+    batch_y = batch_x * batch_x
+
+    return np.expand_dims(batch_x, axis=1).astype('float32'), np.expand_dims(batch_y, axis=1).astype('float32')
+
+do_train_test = False
+
+if (do_train_test):
+  test_batch_maker = TestBatchMaker()
+  train_test(test_net, test_batch_maker, 10000000, 2048)

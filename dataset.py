@@ -24,6 +24,7 @@ class Neil():
 			self.sizy  = rng().uniform(wn_w/10, wn_w/2, (1, batch_s))  # max: /4
 			self.colr  = rng().randint(100, 255,        (c, batch_s))
 			self.pop_t = rng().randint(0, n_frames//2,  (1, batch_s))
+			#print("Initialized with x: {}, y: {}, vx: {}, vy: {}".format(x, y, vx, vy)) TODO remove me
 		if set_type == 'sqm':
 			choices    = ['vernier']
 			flow       = (len(objects)%2 - 0.5)*8*scl**2
@@ -220,11 +221,11 @@ if __name__ == '__main__':
   from numpy import savez, savetxt
   set_type     = 'decode'    # 'recons', 'decode' or 'sqm'
   condition    = 'V-PV3'  # 'V', 'V-PVn' or 'V-AVn', n > 0
-  n_objects    = 2
-  n_frames     = 13
+  n_objects    = 1 # number of objects in one video sequence
+  n_frames     = 13 # length of video sequence in frames
   scale        = 1
-  batch_s      = 4
-  n_channels   = 3
+  batch_s      = 1 # number of video sequences to generate simultaneously
+  n_channels   = 1 # number of channels of video sequences
   batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, n_channels), condition)
   if set_type == 'recons':
   	batch_frames = batch_maker.generate_batch()
