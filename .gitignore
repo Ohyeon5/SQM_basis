@@ -7,3 +7,9 @@ venvs/*
 # Dataset
 *.csv
 *.npz
+
+# Weights & Biases
+wandb
+
+# Python cache
+__pycache__
