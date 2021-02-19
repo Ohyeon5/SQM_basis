@@ -25,6 +25,7 @@ def profile_gpu(detailed=False):
 
 def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.CrossEntropyLoss(), train_conv=True, train_encoder=False, train_decoder=True, device='cpu'):
   # Freeze specified wrapper modules and select only trainable parameters for optimizer
+  trainable_parameters = list()
   if train_conv:
     trainable_parameters += list(model.conv_module.parameters())
   else:
@@ -72,7 +73,6 @@ def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.Cr
       optimizer.zero_grad()
       # Compute the model outputs
       predicted_verniers = model(images)
-      #print(predicted_verniers.dtype)
       # Compute the loss
       loss = criterion(predicted_verniers, batch_labels)
       # Compute the gradients
@@ -85,7 +85,15 @@ def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.Cr
 
       loss_history.append(loss.item())
 
-      wandb.log({"loss": loss.item()})
+      predicted_verniers_copy = predicted_verniers.detach().clone().cpu()
+      predicted_vernier_classes = np.zeros_like(predicted_verniers_copy)
+      predicted_vernier_classes[predicted_verniers_copy > 0.5] = 1.0
+
+      batch_labels_copy = batch_labels.detach().clone().cpu().numpy()
+
+      accuracy = sum(predicted_vernier_classes == batch_labels_copy) / len(batch_labels)
+
+      wandb.log({"loss": loss.item(), "accuracy": accuracy})
 
       if (i + 1) % 1 == 0:
         #print("CLSTM activation:", activation['clstm_out'])
