@@ -28,12 +28,14 @@ def resize_images(image_list, im_size):
 
 
 def create_image_label_list(img_path, group, im_size, skip, all_labels):
+    """
+    """ 
     label = all_labels['label'].loc[int(group)]
-    image_list = os.listdir(img_path + os.sep + group)
+    image_list = os.listdir(os.path.join(img_path, group))
     if len(image_list) < 24:
         return [], []
     image_list = sorted(image_list[:24:skip])
-    images = resize_images([img_path + os.sep + group + os.sep + i for i in image_list], im_size)
+    images = resize_images([os.path.join(img_path, group, i) for i in image_list], im_size)
     return images, label
 
 
@@ -50,8 +52,8 @@ def make_hdf5(img_path, im_size, skip, all_labels, desired_labels, fname='data_h
       The number of images to skip over before adding a new image
     all_labels : DataFrame
       ???
-    desired_labels : ???
-      ???
+    desired_labels : list
+      The labels to be considered
     fname : str
       The name of the HDF5 file to output
     """
