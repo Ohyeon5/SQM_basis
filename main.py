@@ -22,6 +22,8 @@ import numpy as np
 
 import wandb
 
+import h5py
+
 arg_parser = argparse.ArgumentParser(description='Train a deep learning model for various tasks')
 arg_parser.add_argument('--n-epochs', type=int)
 arg_parser.add_argument('--batch-size', type=int)
@@ -57,9 +59,18 @@ if (do_train_LR_vernier_classifier):
   #})
   #config = wandb.config
 
-  batches_images = np.load("vernier_batch.npz").values()
-  batches_labels = np.load("vernier_batch_label.npz").values()
+  #batches_images = np.load("vernier_batch.npz").values()
+  #batches_labels = np.load("vernier_batch_label.npz").values()
 
+  with h5py.File("vernier_data.hdf5", 'r') as data:
+    batches_images = np.zeros_like(data['frames'])
+    data['frames'].read_direct(batches_images)
+    batches_labels = np.zeros_like(data['labels'])
+    data['labels'].read_direct(batches_labels)
+
+    batches_images = list(batches_images)
+    batches_labels = list(batches_labels)
+    
   batches = list(zip(batches_images, batches_labels))
 
   class TempDataset(torch.utils.data.IterableDataset):

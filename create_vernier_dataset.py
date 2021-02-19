@@ -40,8 +40,8 @@ if __name__ == '__main__':
 
   print("Done generating batches")
 
-  with open("vernier_batch.npz", "wb") as outfile:
-    np.savez(outfile, *batches)
-
-  with open("vernier_batch_label.npz", "wb") as outfile:
-    np.savez(outfile, *batches_labels)
+  with h5py.File("vernier_data.hdf5", 'w') as hdf_file:
+    frames = np.stack(batches)
+    labels = np.stack(batches_labels)
+    hdf_file.create_dataset("frames", data=frames)
+    hdf_file.create_dataset("labels", data=labels)
