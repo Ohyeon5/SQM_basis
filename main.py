@@ -59,6 +59,11 @@ if (do_train_LR_vernier_classifier):
   })
   config = wandb.config
 
+  batches_images = np.load("vernier_batch.npz").values()
+  batches_labels = np.load("vernier_batch_label.npz").values()
+
+  batches = list(zip(batches_images, batches_labels))
+
   # model.load_checkpoint("latest_checkpoint.tar", load_conv=False, load_encoder=False, load_decoder=False)
   # TODO freeze encoder in the method before starting training
   train_LR_vernier_classifier(model, batches, 1000, criterion=torch.nn.BCELoss(), train_conv=False, train_encoder=False, device='cuda')

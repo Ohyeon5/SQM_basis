@@ -34,7 +34,7 @@ if __name__ == '__main__':
   print("Done generating batches")
 
   with open("vernier_batch.npz", "wb") as outfile:
-    np.savez(outfile, batches)
+    np.savez(outfile, *batches)
 
   with open("vernier_batch_label.npz", "wb") as outfile:
-    np.savez(outfile, batches_labels)
+    np.savez(outfile, *batches_labels)

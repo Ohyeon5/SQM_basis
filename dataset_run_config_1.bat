@@ -1,0 +1,1 @@
+python -m create_vernier_dataset --n-sequences 10 --batch-size 16
