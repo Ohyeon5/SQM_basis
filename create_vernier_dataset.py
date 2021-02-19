@@ -5,7 +5,12 @@ import numpy as np
 from dataset import BatchMaker
 
 arg_parser = argparse.ArgumentParser(description="Generate a dataset of SQM videos")
+arg_parser.add_argument('--file-path', type=str)
 arg_parser.add_argument('--n-sequences', type=int)
+arg_parser.add_argument('--n-objects', type=int, default=1)
+arg_parser.add_argument('--n-frames', type=int, default=10)
+arg_parser.add_argument('--scale', type=float, default=1.0)
+arg_parser.add_argument('--n-channels', type=int, default=3)
 
 command_line_args = arg_parser.parse_args()
 
@@ -13,11 +18,7 @@ if __name__ == '__main__':
   # Set up the dataset
   print("Creating a batch maker")
 
-  n_objects = 1
-  n_frames = 2
-  scale = 1
-  n_channels = 3
-  batch_maker = BatchMaker('decode', n_objects, 1, n_frames, (64*scale, 64*scale, n_channels), None)
+  batch_maker = BatchMaker('decode', command_line_args.n_objects, 1, command_line_args.n_frames, (64*command_line_args.scale, 64*command_line_args.scale, command_line_args.n_channels), None)
 
   print("Generating batches")
 
@@ -26,7 +27,7 @@ if __name__ == '__main__':
   for batch_idx in range(command_line_args.n_sequences):
     batch_frames, batch_labels = batch_maker.generate_batch()
 
-    batch_frames = np.stack([batch_frames[t] for t in range(n_frames)])
+    batch_frames = np.stack([batch_frames[t] for t in range(len(batch_frames))])
     batch_frames = np.squeeze(batch_frames)
 
     batch_labels_opposite = 1 - batch_labels
@@ -40,7 +41,7 @@ if __name__ == '__main__':
 
   print("Done generating batches")
 
-  with h5py.File("vernier_data.hdf5", 'w') as hdf_file:
+  with h5py.File(command_line_args.file_path, 'w') as hdf_file:
     frames = np.stack(batches)
     labels = np.stack(batches_labels)
     hdf_file.create_dataset("frames", data=frames)
