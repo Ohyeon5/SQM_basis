@@ -83,9 +83,8 @@ if (do_train_LR_vernier_classifier):
 
   training_dl = DataLoader(training_dataset, batch_size=config.batch_size, shuffle=False, drop_last=False)
 
-  # model.load_checkpoint("latest_checkpoint.tar", load_conv=False, load_encoder=False, load_decoder=False)
-  # TODO freeze encoder in the method before starting training
-  train_LR_vernier_classifier(model, config.num_epochs, training_dl, criterion=torch.nn.BCELoss(), train_conv=False, train_encoder=False, device='cuda')
+  model.load_checkpoint("latest_checkpoint.tar", load_conv=False, load_encoder=False, load_decoder=False)
+  train_LR_vernier_classifier(model, config.num_epochs, training_dl, criterion=torch.nn.BCELoss(), train_encoder=False, device='cuda')
 
   wandb.finish()
-  # model.save_checkpoint("latest_checkpoint_phase2.tar")
+  model.save_checkpoint("latest_checkpoint_phase2.tar")
