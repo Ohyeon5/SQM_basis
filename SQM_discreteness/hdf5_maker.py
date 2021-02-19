@@ -58,20 +58,18 @@ def make_hdf5(img_path, im_size, skip, all_labels, desired_labels, fname='data_h
       The name of the HDF5 file to output
     """
     indices = list(all_labels[all_labels['label'].isin(desired_labels)].index)
-    hf = h5py.File(fname, 'w')
-    for group in tqdm(indices):
-        group = str(group)
-        images, label = create_image_label_list(img_path, group, im_size, skip, all_labels)
-        if not images:
-            print('{} excluded, because of the short length'.format(group))
-            continue
-        label_id = desired_labels.index(label)  
-        hfgroup = hf.create_group(group)
-        hfgroup.create_dataset('images', data=images)
-        hfgroup.create_dataset('label', data=label)
-        hfgroup.create_dataset('label_id', data=label_id)
-
-    hf.close()
+    with h5py.File(fname, 'w') as hf:
+        for group in tqdm(indices):
+            group = str(group)
+            images, label = create_image_label_list(img_path, group, im_size, skip, all_labels)
+            if not images:
+                print('{} excluded, because of the short length'.format(group))
+                continue
+            label_id = desired_labels.index(label)  
+            hfgroup = hf.create_group(group)
+            hfgroup.create_dataset('images', data=images)
+            hfgroup.create_dataset('label', data=label)
+            hfgroup.create_dataset('label_id', data=label_id)
 
 
 if __name__ == "__main__":
