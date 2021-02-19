@@ -60,14 +60,14 @@ def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.Cr
     for i, batch in enumerate(train_dl):
       #print(batch[0].shape, batch[1].shape)
 
-      batch_frames, batch_labels = torch.squeeze(batch[0]).float(), torch.squeeze(batch[1]).float()
+      batch_frames, batch_labels = batch[0].float(), torch.squeeze(batch[1], dim=1).float()
 
       #print(batch_frames.shape, batch_labels.shape)
 
       batch_labels = batch_labels.to(device)
       #images = torch.stack(batch_frames) # T x B x H x W x C
       images = batch_frames
-      images = images.permute(1, 4, 0, 2, 3) # B x C x T x H x W
+      images = images.permute(0, 4, 1, 2, 3) # B x C x T x H x W
       images = images.to(device)
 
       # Clear the gradients from the previous batch
