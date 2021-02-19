@@ -71,7 +71,7 @@ if (do_train_LR_vernier_classifier):
 
   training_dataset = TempDataset(batches)
 
-  training_dl = DataLoader(training_dataset, batch_size=1, shuffle=False, drop_last=False)
+  training_dl = DataLoader(training_dataset, batch_size=command_line_args.batch_size, shuffle=False, drop_last=False)
 
   # model.load_checkpoint("latest_checkpoint.tar", load_conv=False, load_encoder=False, load_decoder=False)
   # TODO freeze encoder in the method before starting training
