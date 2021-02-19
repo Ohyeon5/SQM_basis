@@ -23,7 +23,7 @@ def profile_gpu(detailed=False):
       except:
         pass
 
-def train_LR_vernier_classifier(model, batches, n_batches, criterion=torch.nn.CrossEntropyLoss(), train_conv=True, train_encoder=False, train_decoder=True, device='cpu'):
+def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.CrossEntropyLoss(), train_conv=True, train_encoder=False, train_decoder=True, device='cpu'):
   # Freeze specified wrapper modules and select only trainable parameters for optimizer
   trainable_parameters = list()
   trainable_parameters += list(model.parameters())
@@ -52,55 +52,57 @@ def train_LR_vernier_classifier(model, batches, n_batches, criterion=torch.nn.Cr
 
   accuracy_buffer = []
 
-  wandb.watch(model)
+  #wandb.watch(model)
 
-  for batch_idx in range(n_batches):
+  for epoch in range(n_epochs):
     # The mean loss across mini-batches in the current epoch
     total_loss = 0.0
+    for i, batch in enumerate(train_dl):
+      #print(batch[0].shape, batch[1].shape)
 
-    batch_number = np.random.randint(0, len(batches))
-    batch_frames, batch_labels = batches[batch_number]
+      batch_frames, batch_labels = torch.squeeze(batch[0]).float(), torch.squeeze(batch[1]).float()
 
-    batch_labels = torch.from_numpy(batch_labels).float().to(device)
-    images = torch.from_numpy(np.stack(batch_frames)).float() # T x B x H x W x C
-    images = images.permute(1, 4, 0, 2, 3) # B x C x T x H x W
-    images = images.to(device)
+      #print(batch_frames.shape, batch_labels.shape)
 
-    # Clear the gradients from the previous batch
-    optimizer.zero_grad()
-    # Compute the model outputs
-    predicted_verniers = model(images)
-    #print(predicted_verniers.dtype)
-    # Compute the loss
-    loss = criterion(predicted_verniers, batch_labels)
-    # Compute the gradients
-    loss.backward()
-    # Update the model weights
-    optimizer.step()
+      batch_labels = batch_labels.to(device)
+      #images = torch.stack(batch_frames) # T x B x H x W x C
+      images = batch_frames
+      images = images.permute(1, 4, 0, 2, 3) # B x C x T x H x W
+      images = images.to(device)
 
-    # Accumulate the loss
-    total_loss += loss.item()
+      # Clear the gradients from the previous batch
+      optimizer.zero_grad()
+      # Compute the model outputs
+      predicted_verniers = model(images)
+      #print(predicted_verniers.dtype)
+      # Compute the loss
+      loss = criterion(predicted_verniers, batch_labels)
+      # Compute the gradients
+      loss.backward()
+      # Update the model weights
+      optimizer.step()
 
-    loss_history.append(loss.item())
+      # Accumulate the loss
+      total_loss += loss.item()
 
-    #print("Loss for batch {}: {}; Mean loss: {}".format(batch_idx, loss, total_loss / (batch_idx + 1)))
+      loss_history.append(loss.item())
 
-    wandb.log({"loss": loss.item()})
+      #wandb.log({"loss": loss.item()})
 
-    if (batch_idx + 1) % 1 == 0:
-      #print("CLSTM activation:", activation['clstm_out'])
-      #plt.imshow(activation['clstm_out'][0, 0, :, :])
-      #plt.show()
-      #print("Predicted verniers: {}".format(predicted_verniers))
-      #accuracy = sum(predicted_verniers.to('cpu').detach().numpy().argmax(axis=1)==batch_labels.to('cpu').detach().numpy().argmax(axis=1))/len(batch_labels)
-      #accuracy_buffer.append(accuracy)
-      #print("Ground truth labels: {}".format(batch_labels))
-      #print("Accuracy: {}".format(np.mean(accuracy_buffer[-5:])))
-      #save_gif(batch_idx, n_frames, batch_frames, batch_size)
-      #print_model_diagnostic(model, loss_history, plot=False)
-      #print("Batch ", batch_idx + 1)
-      print("Batch ", batch_idx + 1, "; Loss: ", loss.item())
-      #plot_grad_flow(model.named_parameters())
+      if (i + 1) % 1 == 0:
+        #print("CLSTM activation:", activation['clstm_out'])
+        #plt.imshow(activation['clstm_out'][0, 0, :, :])
+        #plt.show()
+        #print("Predicted verniers: {}".format(predicted_verniers))
+        #accuracy = sum(predicted_verniers.to('cpu').detach().numpy().argmax(axis=1)==batch_labels.to('cpu').detach().numpy().argmax(axis=1))/len(batch_labels)
+        #accuracy_buffer.append(accuracy)
+        #print("Ground truth labels: {}".format(batch_labels))
+        #print("Accuracy: {}".format(np.mean(accuracy_buffer[-5:])))
+        #save_gif(batch_idx, n_frames, batch_frames, batch_size)
+        #print_model_diagnostic(model, loss_history, plot=False)
+        #print("Batch ", batch_idx + 1)
+        print("Batch ", i + 1, "; Loss: ", loss.item())
+        #plot_grad_flow(model.named_parameters())
 
 def save_gif(batch_idx, n_frames, batch_frames, batch_size):
   gif_name        = 'test_output_{}.gif'.format(batch_idx)
