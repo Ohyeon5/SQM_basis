@@ -53,14 +53,11 @@ if (do_train_hand_gesture_classifier):
 if (do_train_LR_vernier_classifier):
   print("Training end-to-end for L/R vernier classification")
 
-  #wandb.init(project="lr-vernier-classification", notes=command_line_args.wandb_notes if command_line_args.wandb_notes else "N/A", config={
-    #"num_batches": 10,
-    #"batch_size": command_line_args.batch_size
-  #})
-  #config = wandb.config
-
-  #batches_images = np.load("vernier_batch.npz").values()
-  #batches_labels = np.load("vernier_batch_label.npz").values()
+  wandb.init(project="lr-vernier-classification", notes=command_line_args.wandb_notes if command_line_args.wandb_notes else "N/A", config={
+    "num_epochs": command_line_args.n_epochs,
+    "batch_size": command_line_args.batch_size
+  })
+  config = wandb.config
 
   with h5py.File("vernier_data.hdf5", 'r') as data:
     batches_images = np.zeros_like(data['frames'])
@@ -73,6 +70,8 @@ if (do_train_LR_vernier_classifier):
     
   batches = list(zip(batches_images, batches_labels))
 
+  config.update({"dataset_size": len(batches)})
+
   class TempDataset(torch.utils.data.IterableDataset):
     def __init__(self, batches):
       self.batches = batches
@@ -82,11 +81,11 @@ if (do_train_LR_vernier_classifier):
 
   training_dataset = TempDataset(batches)
 
-  training_dl = DataLoader(training_dataset, batch_size=command_line_args.batch_size, shuffle=False, drop_last=False)
+  training_dl = DataLoader(training_dataset, batch_size=config.batch_size, shuffle=False, drop_last=False)
 
   # model.load_checkpoint("latest_checkpoint.tar", load_conv=False, load_encoder=False, load_decoder=False)
   # TODO freeze encoder in the method before starting training
-  train_LR_vernier_classifier(model, n_epochs, training_dl, criterion=torch.nn.BCELoss(), train_conv=False, train_encoder=False, device='cuda')
+  train_LR_vernier_classifier(model, config.num_epochs, training_dl, criterion=torch.nn.BCELoss(), train_conv=False, train_encoder=False, device='cuda')
 
-  #wandb.finish()
+  wandb.finish()
   # model.save_checkpoint("latest_checkpoint_phase2.tar")

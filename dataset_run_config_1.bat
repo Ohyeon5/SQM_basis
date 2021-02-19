@@ -1,1 +1,1 @@
-python -m create_vernier_dataset --n-sequences 160
+python -m create_vernier_dataset --n-sequences 256

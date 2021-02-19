@@ -25,23 +25,21 @@ def profile_gpu(detailed=False):
 
 def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.CrossEntropyLoss(), train_conv=True, train_encoder=False, train_decoder=True, device='cpu'):
   # Freeze specified wrapper modules and select only trainable parameters for optimizer
-  trainable_parameters = list()
-  trainable_parameters += list(model.parameters())
-  #if train_conv:
-    #trainable_parameters += list(model.conv_module.parameters())
-  #else:
-    #for param in model.conv_module.parameters():
-      #param.require_grad = False
-  #if train_encoder:
-    #trainable_parameters += list(model.encoder_module.parameters())
-  #else:
-    #for param in model.encoder_module.parameters():
-      #param.require_grad = False
-  #if train_decoder:
-    #trainable_parameters += list(model.decoder_module.parameters())
-  #else:
-    #for param in model.decoder_module.parameters():
-      #param.require_grad = False
+  if train_conv:
+    trainable_parameters += list(model.conv_module.parameters())
+  else:
+    for param in model.conv_module.parameters():
+      param.require_grad = False
+  if train_encoder:
+    trainable_parameters += list(model.encoder_module.parameters())
+  else:
+    for param in model.encoder_module.parameters():
+      param.require_grad = False
+  if train_decoder:
+    trainable_parameters += list(model.decoder_module.parameters())
+  else:
+    for param in model.decoder_module.parameters():
+      param.require_grad = False
 
   # Move model to selected device
   model.to(device)
@@ -52,7 +50,7 @@ def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.Cr
 
   accuracy_buffer = []
 
-  #wandb.watch(model)
+  wandb.watch(model, log='all')
 
   for epoch in range(n_epochs):
     # The mean loss across mini-batches in the current epoch
@@ -87,7 +85,7 @@ def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.Cr
 
       loss_history.append(loss.item())
 
-      #wandb.log({"loss": loss.item()})
+      wandb.log({"loss": loss.item()})
 
       if (i + 1) % 1 == 0:
         #print("CLSTM activation:", activation['clstm_out'])
