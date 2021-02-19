@@ -75,14 +75,6 @@ def train_LR_vernier_classifier(model, batches, n_batches, criterion=torch.nn.Cr
   for batch_idx in range(n_batches):
     # The mean loss across mini-batches in the current epoch
     total_loss = 0.0
-    
-    #batch_frames, batch_labels = batch_maker.generate_batch()
-    #batch_labels_opposite = 1 - batch_labels
-    #batch_labels = np.vstack((batch_labels_opposite, batch_labels)).T
-    #batch_labels = torch.from_numpy(batch_labels).float().to(device)
-    #images = torch.from_numpy(np.stack(batch_frames)).float() # T x B x H x W x C
-    #images = images.permute(1, 4, 0, 2, 3) # B x C x T x H x W
-    #images = images.to(device)
 
     batch_number = np.random.randint(0, len(batches))
     batch_frames, batch_labels = batches[batch_number]
@@ -111,7 +103,7 @@ def train_LR_vernier_classifier(model, batches, n_batches, criterion=torch.nn.Cr
 
     #print("Loss for batch {}: {}; Mean loss: {}".format(batch_idx, loss, total_loss / (batch_idx + 1)))
 
-    wandb.log({"loss": loss.item()})
+    #wandb.log({"loss": loss.item()})
 
     if (batch_idx + 1) % 1 == 0:
       #print("CLSTM activation:", activation['clstm_out'])
