@@ -43,28 +43,10 @@ def train_LR_vernier_classifier(model, batches, n_batches, criterion=torch.nn.Cr
     #for param in model.decoder_module.parameters():
       #param.require_grad = False
 
-  #torch.nn.init.normal_(model.decoder_module.classifier[-2].weight, mean=2.0, std=5.0)
-
-  #profile_gpu(detailed=False)
-
-  def get_activation(name):
-    def hook(model, input, output):
-      print("Name", name)
-      #print(input)
-      module_input = input[0].detach().cpu().numpy()
-      module_output = output.detach().cpu().numpy()
-      print("Input -- mean: {}; std: {}".format(np.mean(module_input), np.std(module_input)))
-      print("Output -- mean: {}; std: {}".format(np.mean(module_output), np.std(module_output)))
-    return hook
-
-  #model.encoder_module.register_forward_hook(get_activation('clstm'))
-
   # Move model to selected device
   model.to(device)
 
-  # TODO change learning rate, change random seeds, change initialization (try He), check gradients + conv filters
   optimizer = torch.optim.Adam(trainable_parameters)
-  #optimizer = torch.optim.SGD(trainable_parameters, lr=1e-5, momentum=0.5)
 
   loss_history = []
 
@@ -103,7 +85,7 @@ def train_LR_vernier_classifier(model, batches, n_batches, criterion=torch.nn.Cr
 
     #print("Loss for batch {}: {}; Mean loss: {}".format(batch_idx, loss, total_loss / (batch_idx + 1)))
 
-    #wandb.log({"loss": loss.item()})
+    wandb.log({"loss": loss.item()})
 
     if (batch_idx + 1) % 1 == 0:
       #print("CLSTM activation:", activation['clstm_out'])
@@ -134,28 +116,15 @@ def print_model_diagnostic(model, loss_history, plot=True):
   weights = last_ff_layer_weight.detach().cpu().numpy()
   gradients = last_ff_layer_grad.detach().cpu().numpy()
 
-  #sec_last_ff_layer_weight = model.decoder_module.classifier[1].weight
-  #sec_last_ff_layer_grad = sec_last_ff_layer_weight.grad
-  #sec_weights = sec_last_ff_layer_weight.detach().cpu().numpy()
-
   if plot:
     plt.subplot(2, 2, 1)
     plt.hist(weights.flatten())
-    #sns.kdeplot(weights.flatten())
-    #plt.subplot(2, 2, 2)
-    #plt.hist(sec_weights.flatten())
-    #sns.kdeplot(sec_weights.flatten())
     #plt.title("Weights KDE")
     #plt.show()
 
-    #sec_gradients = sec_last_ff_layer_grad.detach().cpu().numpy()
     #plt.title("Gradients KDE")
     plt.subplot(2, 2, 3)
     plt.hist(gradients.flatten())
-    #sns.kdeplot(gradients.flatten())
-    #plt.subplot(2, 2, 4)
-    #plt.hist(sec_gradients.flatten())
-    #sns.kdeplot(sec_gradients.flatten())
     plt.show()
 
     #plt.title("Loss history")
@@ -166,32 +135,3 @@ def print_model_diagnostic(model, loss_history, plot=True):
   print("Last layer of weights", weights)
   print("Last layer of gradients: ", gradients)
   #print("Last layer of FF classifier gradients -- mean: {}; std: {}".format(np.mean(gradients), np.std(gradients)))
-
-def plot_grad_flow(named_parameters):
-  '''Plots the gradients flowing through different layers in the net during training.
-  Can be used for checking for possible gradient vanishing / exploding problems.
-  
-  Usage: Plug this function in Trainer class after loss.backwards() as 
-  "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow'''
-  ave_grads = []
-  max_grads= []
-  layers = []
-  for n, p in named_parameters:
-      if(p.requires_grad) and ("bias" not in n):
-          layers.append(n)
-          ave_grads.append(p.grad.abs().mean())
-          max_grads.append(p.grad.abs().max())
-  plt.bar(np.arange(len(max_grads)), max_grads, alpha=0.1, lw=1, color="c")
-  plt.bar(np.arange(len(max_grads)), ave_grads, alpha=0.1, lw=1, color="b")
-  plt.hlines(0, 0, len(ave_grads)+1, lw=2, color="k" )
-  plt.xticks(range(0,len(ave_grads), 1), layers, rotation="vertical")
-  plt.xlim(left=0, right=len(ave_grads))
-  plt.ylim(bottom = -0.001, top=0.02) # zoom in on the lower gradient regions
-  plt.xlabel("Layers")
-  plt.ylabel("average gradient")
-  plt.title("Gradient flow")
-  plt.grid(True)
-  plt.legend([Line2D([0], [0], color="c", lw=4),
-              Line2D([0], [0], color="b", lw=4),
-              Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])
-  plt.show()
