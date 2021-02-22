@@ -37,9 +37,8 @@ def train_hand_gesture_classifier(model, n_epochs, train_dl, criterion=torch.nn.
   model.to(device)
 
   optimizer = torch.optim.Adam(trainable_parameters)
-  # optimizer = torch.optim.SGD(trainable_parameters, lr=1)
 
-  id_to_label = {0: "Swiping Left", 1: "Swiping Right"}
+  wandb.watch(model, log='all')
 
   for epoch in range(n_epochs):
     # The mean loss across mini-batches in the current epoch
@@ -52,17 +51,16 @@ def train_hand_gesture_classifier(model, n_epochs, train_dl, criterion=torch.nn.
       # Clear the gradients from the previous batch
       optimizer.zero_grad()
       # Compute the model outputs
-      predicted_hand_gestures = model(images)
-      # print("Predicted hand gestures: {}".format(predicted_hand_gestures))
+      model_predictions = model(images)
       # Compute the loss
-      loss = criterion(predicted_hand_gestures, label_ids)
+      loss = criterion(model_predictions, label_ids)
       # Compute the gradients
       loss.backward()
       # Update the model weights
       optimizer.step()
       
       # Accumulate the loss
-      mean_loss += loss
+      mean_loss += loss.item()
 
       print("Loss after batch {}: {}".format(i, loss))
     
