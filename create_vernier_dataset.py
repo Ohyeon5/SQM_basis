@@ -33,11 +33,8 @@ if __name__ == '__main__':
       #print("Batch frame 0", batch_frames[0].shape)
       #print("Batch label", batch_label, batch_label.shape)
 
-      batch_label_opposite = 1 - batch_label
-      batch_label = np.array([batch_label_opposite, batch_label]).astype('float32')
-
       group = hdf_file.create_group("vernier_{}".format(batch_idx))
 
       group.create_dataset('images', data=batch_frames)
       group.create_dataset('label', data='placeholder') # TODO sort this out
-      group.create_dataset('label_id', data=batch_label)
+      group.create_dataset('label_id', data=batch_label.astype('int64'))
