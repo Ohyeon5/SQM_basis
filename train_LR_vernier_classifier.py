@@ -91,9 +91,11 @@ def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.Cr
 
       batch_labels_copy = batch_labels.detach().clone().cpu().numpy()
 
-      accuracy = sum(predicted_vernier_classes == batch_labels_copy) / len(batch_labels)
+      accuracy = sum(np.argmax(predicted_vernier_classes, axis=1) == np.argmax(batch_labels_copy, axis=1)) / len(batch_labels)
 
-      wandb.log({"loss": loss.item(), "accuracy": accuracy})
+      print("Accuracy:", accuracy)
+
+      wandb.log({"loss": loss.item(), "accuracy": accuracy.item()})
 
       if (i + 1) % 1 == 0:
         #print("CLSTM activation:", activation['clstm_out'])
