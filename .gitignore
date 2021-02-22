@@ -14,3 +14,6 @@ wandb
 
 # Python cache
 __pycache__
+
+# Model weights
+*.tar
