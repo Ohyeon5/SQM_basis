@@ -431,8 +431,8 @@ class FF_classifier(nn.Module):
 			nn.Linear(avg_pool_size[0]*avg_pool_size[1]*in_channels, hidden_channels),
 			nn.ReLU(inplace=True),
 			nn.Dropout(),
-			nn.Linear(hidden_channels, n_classes),
-      nn.Softmax(dim=1))
+			nn.Linear(hidden_channels, n_classes)
+    )
 
 	def forward(self, x):	
 		# arg: x is a 4D tensor B x C x H x W

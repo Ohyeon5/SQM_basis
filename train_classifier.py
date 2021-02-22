@@ -23,7 +23,7 @@ def profile_gpu(detailed=False):
       except:
         pass
 
-def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.CrossEntropyLoss(), train_conv=True, train_encoder=False, train_decoder=True, device='cpu'):
+def train_classifier(model, n_epochs, train_dl, criterion=torch.nn.CrossEntropyLoss(), train_conv=True, train_encoder=False, train_decoder=True, device='cpu'):
   # Freeze specified wrapper modules and select only trainable parameters for optimizer
   trainable_parameters = list()
   if train_conv:
@@ -72,18 +72,17 @@ def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.Cr
       mean_loss += loss.item()
 
       predicted_verniers_copy = model_predictions.detach().clone().cpu()
-      predicted_vernier_classes = np.zeros_like(predicted_verniers_copy)
-      predicted_vernier_classes[predicted_verniers_copy > 0.5] = 1.0
 
       batch_labels_copy = batch_labels.detach().clone().cpu().numpy()
 
-      accuracy = sum(np.argmax(predicted_vernier_classes, axis=1) == np.argmax(batch_labels_copy, axis=1)) / len(batch_labels)
+      #accuracy = sum(np.argmax(predicted_verniers_copy, axis=1) == batch_labels_copy) / len(batch_labels_copy)
 
-      print("Accuracy:", accuracy)
+      #print("Accuracy:", accuracy)
 
       video_sample = images.detach().cpu().transpose(1, 2).numpy()
 
-      wandb.log({"loss": loss.item(), "accuracy": accuracy.item(), "video sample": wandb.Video(video_sample)})
+      #wandb.log({"loss": loss.item(), "accuracy": accuracy.item(), "video sample": wandb.Video(video_sample)})
+      wandb.log({"loss": loss.item(), "video sample": wandb.Video(video_sample)})
 
       print("Loss after batch {}: {}".format(i, loss.item()))
     
