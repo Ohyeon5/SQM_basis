@@ -95,7 +95,9 @@ def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.Cr
 
       print("Accuracy:", accuracy)
 
-      wandb.log({"loss": loss.item(), "accuracy": accuracy.item()})
+      video_sample = images.detach().cpu().transpose(1, 2).numpy()
+      
+      wandb.log({"loss": loss.item(), "accuracy": accuracy.item(), "video sample": wandb.Video(video_sample)})
 
       if (i + 1) % 1 == 0:
         #print("CLSTM activation:", activation['clstm_out'])
