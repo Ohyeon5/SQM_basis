@@ -48,7 +48,6 @@ if (do_train_hand_gesture_classifier):
   model.load_checkpoint("latest_checkpoint.tar")
   train_hand_gesture_classifier(model, n_epochs, training_dl, device='cuda')
   model.save_checkpoint("latest_checkpoint.tar")
-  # model.show_conv_layer_filters()
 
 if (do_train_LR_vernier_classifier):
   print("Training end-to-end for L/R vernier classification")
@@ -59,27 +58,9 @@ if (do_train_LR_vernier_classifier):
   })
   config = wandb.config
 
-  with h5py.File("vernier_data.hdf5", 'r') as data:
-    batches_images = np.zeros_like(data['frames'])
-    data['frames'].read_direct(batches_images)
-    batches_labels = np.zeros_like(data['labels'])
-    data['labels'].read_direct(batches_labels)
+  training_dataset = HDF5Dataset(command_line_args.training_data_path)
 
-    batches_images = list(batches_images)
-    batches_labels = list(batches_labels)
-    
-  batches = list(zip(batches_images, batches_labels))
-
-  config.update({"dataset_size": len(batches)})
-
-  class TempDataset(torch.utils.data.IterableDataset):
-    def __init__(self, batches):
-      self.batches = batches
-    
-    def __iter__(self):
-      return iter(batches)
-
-  training_dataset = TempDataset(batches)
+  config.update({"dataset_size": len(training_dataset)})
 
   training_dl = DataLoader(training_dataset, batch_size=config.batch_size, shuffle=False, drop_last=False)
 

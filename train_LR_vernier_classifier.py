@@ -47,45 +47,31 @@ def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.Cr
 
   optimizer = torch.optim.Adam(trainable_parameters)
 
-  loss_history = []
-
-  accuracy_buffer = []
-
   wandb.watch(model, log='all')
 
   for epoch in range(n_epochs):
     # The mean loss across mini-batches in the current epoch
-    total_loss = 0.0
+    mean_loss = 0.0
     for i, batch in enumerate(train_dl):
-      #print(batch[0].shape, batch[1].shape)
-
-      batch_frames, batch_labels = batch[0].float(), torch.squeeze(batch[1], dim=1).float()
-
-      #print(batch_frames.shape, batch_labels.shape)
-
-      batch_labels = batch_labels.to(device)
-      #images = torch.stack(batch_frames) # T x B x H x W x C
-      images = batch_frames
-      images = images.permute(0, 4, 1, 2, 3) # B x C x T x H x W
-      images = images.to(device)
-
+      # Move label ids to selected device
+      batch_labels = batch['label_id'].to(device)
+      # Stack images and move to selected device
+      images = torch.stack(batch['images'], 2).to(device) # B x C x T x H x W
       # Clear the gradients from the previous batch
       optimizer.zero_grad()
       # Compute the model outputs
-      predicted_verniers = model(images)
+      model_predictions = model(images)
       # Compute the loss
-      loss = criterion(predicted_verniers, batch_labels)
+      loss = criterion(model_predictions, batch_labels)
       # Compute the gradients
       loss.backward()
       # Update the model weights
       optimizer.step()
 
       # Accumulate the loss
-      total_loss += loss.item()
+      mean_loss += loss.item()
 
-      loss_history.append(loss.item())
-
-      predicted_verniers_copy = predicted_verniers.detach().clone().cpu()
+      predicted_verniers_copy = model_predictions.detach().clone().cpu()
       predicted_vernier_classes = np.zeros_like(predicted_verniers_copy)
       predicted_vernier_classes[predicted_verniers_copy > 0.5] = 1.0
 
@@ -96,23 +82,14 @@ def train_LR_vernier_classifier(model, n_epochs, train_dl, criterion=torch.nn.Cr
       print("Accuracy:", accuracy)
 
       video_sample = images.detach().cpu().transpose(1, 2).numpy()
-      
+
       wandb.log({"loss": loss.item(), "accuracy": accuracy.item(), "video sample": wandb.Video(video_sample)})
 
-      if (i + 1) % 1 == 0:
-        #print("CLSTM activation:", activation['clstm_out'])
-        #plt.imshow(activation['clstm_out'][0, 0, :, :])
-        #plt.show()
-        #print("Predicted verniers: {}".format(predicted_verniers))
-        #accuracy = sum(predicted_verniers.to('cpu').detach().numpy().argmax(axis=1)==batch_labels.to('cpu').detach().numpy().argmax(axis=1))/len(batch_labels)
-        #accuracy_buffer.append(accuracy)
-        #print("Ground truth labels: {}".format(batch_labels))
-        #print("Accuracy: {}".format(np.mean(accuracy_buffer[-5:])))
-        #save_gif(batch_idx, n_frames, batch_frames, batch_size)
-        #print_model_diagnostic(model, loss_history, plot=False)
-        #print("Batch ", batch_idx + 1)
-        print("Batch ", i + 1, "; Loss: ", loss.item())
-        #plot_grad_flow(model.named_parameters())
+      print("Loss after batch {}: {}".format(i, loss.item()))
+    
+    mean_loss /= len(train_dl)
+
+    print("Loss after epoch {}: {}".format(epoch, mean_loss))
 
 def save_gif(batch_idx, n_frames, batch_frames, batch_size):
   gif_name        = 'test_output_{}.gif'.format(batch_idx)
