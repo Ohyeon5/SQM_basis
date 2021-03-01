@@ -75,6 +75,9 @@ if (do_train_LR_vernier_classifier):
 
   #model.load_checkpoint("latest_checkpoint.tar", load_conv=False, load_encoder=False, load_decoder=False)
   trainer.fit(model, training_dl)
+
+  input_sample = torch.randn((1, 3, 2, 64, 64))
+  model.to_onnx("test_model.onnx", input_sample)
   #model.save_checkpoint("latest_checkpoint_phase2.tar")
 
 #wandb.finish()
