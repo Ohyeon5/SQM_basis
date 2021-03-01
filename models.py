@@ -2,7 +2,14 @@ import matplotlib.pyplot as plt
 import os
 import torch
 
-class Wrapper(torch.nn.Module):
+import pytorch_lightning as pl
+
+import wandb
+
+import numpy as np
+import imageio
+
+class Wrapper(pl.LightningModule):
   """Wrap a convolutional module, an encoder and a decoder
 
   Parameters
@@ -15,11 +22,17 @@ class Wrapper(torch.nn.Module):
       The decoder module    
   """
 
-  def __init__(self, conv_module, encoder_module, decoder_module):
-    super(Wrapper, self).__init__()
+  def __init__(self, conv_module, encoder_module, decoder_module, criterion=torch.nn.CrossEntropyLoss(), train_conv=False, train_encoder=False, train_decoder=False):
+    super().__init__()
     self.conv_module = conv_module
     self.encoder_module = encoder_module
     self.decoder_module = decoder_module
+
+    self.criterion = criterion
+
+    self.train_conv = train_conv
+    self.train_encoder = train_encoder
+    self.train_decoder = train_decoder
 
   def forward(self, x):
     x = self.conv_module(x)
@@ -27,6 +40,48 @@ class Wrapper(torch.nn.Module):
     x = self.decoder_module(x)
 
     return x
+
+  def configure_optimizers(self):
+    # Freeze specified wrapper modules and select only trainable parameters for optimizer
+    trainable_parameters = list()
+    if self.train_conv:
+      trainable_parameters += list(self.conv_module.parameters())
+    else:
+      for param in self.conv_module.parameters():
+        param.require_grad = False
+    if self.train_encoder:
+      trainable_parameters += list(self.encoder_module.parameters())
+    else:
+      for param in self.encoder_module.parameters():
+        param.require_grad = False
+    if self.train_decoder:
+      trainable_parameters += list(self.decoder_module.parameters())
+    else:
+      for param in self.decoder_module.parameters():
+        param.require_grad = False
+
+    optimizer = torch.optim.Adam(trainable_parameters)
+
+    return optimizer
+
+  def training_step(self, train_batch, batch_idx):
+    # Move label ids to selected device
+    batch_labels = train_batch['label_id']
+    # Stack images and move to selected device
+    images = torch.stack(train_batch['images'], 2) # B x C x T x H x W
+    # Compute the model outputs
+    model_predictions = self.conv_module(images)
+    model_predictions = self.encoder_module(model_predictions)
+    model_predictions = self.decoder_module(model_predictions)
+    # Compute the loss
+    loss = self.criterion(model_predictions, batch_labels)
+
+    self.log('loss', loss.item())
+
+    #video_sample = images.detach().cpu().transpose(1, 2).numpy()
+    #self.log('video sample', wandb.Video(video_sample)) TODO fix this!!!
+    
+    return loss
 
   # TODO add structured saving and loading
   def save_checkpoint(self, path, save_conv = True, save_encoder = True, save_decoder = True):
@@ -123,3 +178,10 @@ class Wrapper(torch.nn.Module):
       self.show_conv_filter_rgb(conv_layer, "conv_out{}".format(out_channel), out_channel=out_channel)
       for in_channel in range(conv_layer.weight.shape[1]):
         self.show_conv_filter(conv_layer, "conv_in{}_out{}".format(in_channel, out_channel), in_channel=in_channel, out_channel=out_channel)
+
+def save_gif(batch_idx, n_frames, batch_frames, batch_size):
+  gif_name        = 'test_output_{}.gif'.format(batch_idx)
+  display_frames  = []
+  for t in range(n_frames):
+    display_frames.append(np.hstack([batch_frames[t][b] for b in range(batch_size)]))
+  imageio.mimwrite(gif_name, display_frames, duration=0.1)
