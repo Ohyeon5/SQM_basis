@@ -9,9 +9,6 @@ import torch.nn.functional as F
 
 from SQM_discreteness.convlstm_SreenivasVRao import *
 
-from train_LR_vernier_classifier import profile_gpu
-
-
 ###############
 #   Networks  #
 ###############

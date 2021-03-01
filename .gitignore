@@ -17,3 +17,6 @@ __pycache__
 
 # Model weights
 *.tar
+
+# Lightning logs
+lightning_logs/*

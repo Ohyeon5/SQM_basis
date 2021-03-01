@@ -12,7 +12,6 @@ the model labels the sequence as a left or right vernier
 import argparse
 import torch
 from torch.utils.data import DataLoader, IterableDataset
-from train_classifier import train_classifier
 from models import Wrapper
 from SQM_discreteness.models import Primary_conv3D, ConvLSTM_disc_low, ConvLSTM_disc_high, FF_classifier
 from SQM_discreteness.hdf5_loader import HDF5Dataset, ToTensor
@@ -23,6 +22,10 @@ import wandb
 
 import h5py
 
+import pytorch_lightning as pl
+
+from pytorch_lightning.loggers import WandbLogger
+
 arg_parser = argparse.ArgumentParser(description='Train a deep learning model for various tasks')
 arg_parser.add_argument('--n-epochs', type=int)
 arg_parser.add_argument('--batch-size', type=int)
@@ -31,38 +34,47 @@ arg_parser.add_argument('--wandb-notes', type=str)
 
 command_line_args = arg_parser.parse_args()
 
-do_train_hand_gesture_classifier = True
-do_train_LR_vernier_classifier = False
-# TODO also vary hidden channels
-model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(1), FF_classifier(256, 2, hidden_channels=64))
+do_train_hand_gesture_classifier = False
+do_train_LR_vernier_classifier = True
 n_epochs = command_line_args.n_epochs
 
-wandb.init(project="lr-vernier-classification", notes=command_line_args.wandb_notes if command_line_args.wandb_notes else "N/A", config={
-  "num_epochs": command_line_args.n_epochs,
-  "batch_size": command_line_args.batch_size
-})
-config = wandb.config
+#wandb.init(project="lr-vernier-classification", notes=command_line_args.wandb_notes if command_line_args.wandb_notes else "N/A", config={
+  #"num_epochs": command_line_args.n_epochs,
+  #"batch_size": command_line_args.batch_size
+#})
+#config = wandb.config
+
+wandb_logger = WandbLogger(project="lr-vernier-classification")
 
 if (do_train_hand_gesture_classifier):
   print("Training end-to-end for hand gesture classification")
   
   training_dataset = HDF5Dataset(command_line_args.training_data_path, transform=ToTensor())
-  config.update({"dataset_size": len(training_dataset)})
+  #config.update({"dataset_size": len(training_dataset)})
   training_dl = DataLoader(training_dataset, batch_size=command_line_args.batch_size, shuffle=False, drop_last=False)
 
-  model.load_checkpoint("latest_checkpoint.tar")
-  train_classifier(model, config.num_epochs, training_dl, device='cuda')
+  # TODO also vary hidden channels
+  model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(1), FF_classifier(256, 2, hidden_channels=64), train_conv=True, train_encoder=True, train_decoder=True)
+  trainer = pl.Trainer(gpus=1)
+
+  #model.load_checkpoint("latest_checkpoint.tar")
+  trainer.fit(model, training_dl)
   #model.save_checkpoint("latest_checkpoint.tar")
 
 if (do_train_LR_vernier_classifier):
   print("Training end-to-end for L/R vernier classification")
 
   training_dataset = HDF5Dataset(command_line_args.training_data_path)
-  config.update({"dataset_size": len(training_dataset)})
-  training_dl = DataLoader(training_dataset, batch_size=config.batch_size, shuffle=False, drop_last=False)
+  #config.update({"dataset_size": len(training_dataset)})
+  training_dl = DataLoader(training_dataset, batch_size=command_line_args.batch_size, shuffle=False, drop_last=False)
 
-  model.load_checkpoint("latest_checkpoint.tar", load_conv=False, load_encoder=False, load_decoder=False)
-  train_classifier(model, config.num_epochs, training_dl, train_encoder=False, device='cuda')
-  model.save_checkpoint("latest_checkpoint_phase2.tar")
+  # TODO also vary hidden channels
+  #model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(1), FF_classifier(256, 2, hidden_channels=64), train_conv=True, train_decoder=True)
+  model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(1), FF_classifier(256, 2, hidden_channels=64), train_conv=True, train_encoder=True, train_decoder=True)
+  trainer = pl.Trainer(gpus=1, logger=wandb_logger, log_every_n_steps=4, max_epochs=command_line_args.n_epochs) # Set gpus=-1 to use all available GPUs
 
-wandb.finish()
+  #model.load_checkpoint("latest_checkpoint.tar", load_conv=False, load_encoder=False, load_decoder=False)
+  trainer.fit(model, training_dl)
+  #model.save_checkpoint("latest_checkpoint_phase2.tar")
+
+#wandb.finish()
