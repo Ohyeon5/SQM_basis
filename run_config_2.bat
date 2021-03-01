@@ -1,1 +1,1 @@
-python main.py --n-epochs 20 --batch-size 8 --training-data-path "D:/SQM_basis/vernier_data.hdf5"
+python main.py --n-epochs 100 --batch-size 16 --training-data-path "D:/SQM_basis/vernier_data_big.hdf5"
