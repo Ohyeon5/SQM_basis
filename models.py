@@ -34,6 +34,8 @@ class Wrapper(pl.LightningModule):
     self.train_encoder = train_encoder
     self.train_decoder = train_decoder
 
+    self.save_hyperparameters()
+
   def forward(self, x):
     x = self.conv_module(x)
     x = self.encoder_module(x)
