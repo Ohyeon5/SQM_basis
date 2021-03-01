@@ -20,3 +20,6 @@ __pycache__
 
 # Lightning logs
 lightning_logs/*
+
+# ONNX model
+*.onnx
