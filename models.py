@@ -78,8 +78,8 @@ class Wrapper(pl.LightningModule):
 
     self.log('loss', loss.item())
 
-    #video_sample = images.detach().cpu().transpose(1, 2).numpy()
-    #self.log('video sample', wandb.Video(video_sample)) TODO fix this!!!
+    video_sample = images.detach().cpu().transpose(1, 2).numpy()
+    self.logger.experiment.log({'video sample': wandb.Video(video_sample)}, commit=False)
     
     return loss
 
