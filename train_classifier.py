@@ -13,9 +13,6 @@ import seaborn as sns
 import wandb
 
 def train_classifier(model, n_epochs, train_dl):
-
-  wandb.watch(model, log='all')
-
   for epoch in range(n_epochs):
     # The mean loss across mini-batches in the current epoch
     for i, batch in enumerate(train_dl):
