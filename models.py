@@ -36,6 +36,9 @@ class Wrapper(pl.LightningModule):
 
     self.save_hyperparameters()
 
+    # Metrics
+    self.train_acc = pl.metrics.Accuracy()
+
   def forward(self, x):
     x = self.conv_module(x)
     x = self.encoder_module(x)
@@ -79,9 +82,13 @@ class Wrapper(pl.LightningModule):
     loss = self.criterion(model_predictions, batch_labels)
 
     self.log('loss', loss.item())
+    # Log accuracy
+    self.train_acc(torch.nn.functional.softmax(model_predictions), batch_labels)
+    self.log('accuracy', self.train_acc)
 
-    video_sample = images.detach().cpu().transpose(1, 2).numpy().astype('uint8')
-    self.logger.experiment.log({'video sample': wandb.Video(video_sample)}, commit=False)
+    if batch_idx % 128 == 0:
+      video_sample = images.detach().cpu().transpose(1, 2).numpy().astype('uint8')
+      self.logger.experiment.log({'video sample': wandb.Video(video_sample)}, commit=False)
     
     return loss
 

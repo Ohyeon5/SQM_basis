@@ -84,5 +84,3 @@ if (do_train_LR_vernier_classifier):
   input_sample = torch.randn((1, 3, 2, 64, 64))
   model.to_onnx("test_model.onnx", input_sample)
   #model.save_checkpoint("latest_checkpoint_phase2.tar")
-
-#wandb.finish()
