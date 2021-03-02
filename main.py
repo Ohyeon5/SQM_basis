@@ -46,6 +46,8 @@ n_epochs = command_line_args.n_epochs
 
 wandb_logger = WandbLogger(project="lr-vernier-classification")
 
+pl.seed_everything(42) # seed all PRNGs for reproducibility
+
 if (do_train_hand_gesture_classifier):
   print("Training end-to-end for hand gesture classification")
   
@@ -72,7 +74,9 @@ if (do_train_LR_vernier_classifier):
   #model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(1), FF_classifier(256, 2, hidden_channels=64), train_conv=True, train_decoder=True)
   model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(1), FF_classifier(256, 2, hidden_channels=4096), train_conv=True, train_encoder=True, train_decoder=True)
   wandb_logger.watch(model, log_freq=1)
-  trainer = pl.Trainer(gpus=1, logger=wandb_logger, log_every_n_steps=4, max_epochs=command_line_args.n_epochs) # Set gpus=-1 to use all available GPUs
+  # Set gpus=-1 to use all available GPUs
+  # Set deterministic=True to obtain deterministic behavior for reproducibility
+  trainer = pl.Trainer(gpus=1, logger=wandb_logger, log_every_n_steps=4, max_epochs=command_line_args.n_epochs, deterministic=True)
 
   #model.load_checkpoint("latest_checkpoint.tar", load_conv=False, load_encoder=False, load_decoder=False)
   trainer.fit(model, training_dl)
