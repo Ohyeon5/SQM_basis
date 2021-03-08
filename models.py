@@ -34,7 +34,7 @@ class Wrapper(pl.LightningModule):
     self.train_encoder = train_encoder
     self.train_decoder = train_decoder
 
-    self.save_hyperparameters()
+    self.save_hyperparameters('train_conv', 'train_encoder', 'train_decoder')
 
     # Metrics
     self.train_acc = pl.metrics.Accuracy()

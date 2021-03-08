@@ -117,23 +117,23 @@ class HDF5Dataset(Dataset):
             self.data_cache[file_path].append(data)
         return len(self.data_cache[file_path]) - 1
 
-    def get_data_infos(self, type):
+    def get_data_infos(self, dtype):
         """Get data infos belonging to a certain type of data.
         """
-        data_info_type = [di for di in self.data_info if di['type'] == type]
+        data_info_type = [di for di in self.data_info if di['type'] == dtype]
         return data_info_type
 
-    def get_data(self, type, i):
+    def get_data(self, dtype, i):
         """Call this function anytime you want to access a chunk of data from the
             dataset. This will make sure that the data is loaded in case it is
             not part of the data cache.
         """
-        fp = self.get_data_infos(type)[i]['file_path']
+        fp = self.get_data_infos(dtype)[i]['file_path']
         if fp not in self.data_cache:
             self._load_data(fp)
 
         # get new cache_idx assigned by _load_data_info
-        cache_idx = self.get_data_infos(type)[i]['cache_idx']
+        cache_idx = self.get_data_infos(dtype)[i]['cache_idx']
         return self.data_cache[fp][cache_idx]
 
 
