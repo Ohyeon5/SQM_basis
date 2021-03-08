@@ -50,11 +50,14 @@ wandb_logger = WandbLogger(project="lr-vernier-classification")
 pl.seed_everything(42) # seed all PRNGs for reproducibility
 
 class VernierDataModule(LightningDataModule):
-  def __init__(self, data_path, batch_size):
+  def __init__(self, data_path, batch_size, head_n=0):
     super().__init__()
     self.data_path = data_path
     self.batch_size = batch_size
     self.dataset = HDF5Dataset(self.data_path)
+
+    if head_n:
+      self.dataset = [self.dataset[i] for i in range(head_n)]
 
     n_train = int(0.8 * len(self.dataset))
     n_val = len(self.dataset) - n_train
@@ -84,14 +87,23 @@ if (do_train_hand_gesture_classifier):
   trainer.fit(model, training_dl)
   #model.save_checkpoint("latest_checkpoint.tar")
 
+encoder_window = 1
+decoder_inchannels = 256
+decoder_n_classes = 2
+decoder_hidden_channels = 64
+
 if (do_train_LR_vernier_classifier):
   print("Training end-to-end for L/R vernier classification")
 
-  vernier_dm = VernierDataModule(command_line_args.training_data_path, command_line_args.batch_size)
+  vernier_dm = VernierDataModule(command_line_args.training_data_path, command_line_args.batch_size, head_n=8)
+  # Log dataset statistics # TODO look at this again
+  wandb_logger.experiment.config.update({"train_ds_len": len(vernier_dm.train_ds), "val_ds_len": len(vernier_dm.val_ds)})
 
   # TODO also vary hidden channels
   #model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(1), FF_classifier(256, 2, hidden_channels=64), train_conv=True, train_decoder=True)
-  model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(1), FF_classifier(256, 2, hidden_channels=64), train_conv=True, train_encoder=True, train_decoder=True)
+  model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(encoder_window), FF_classifier(decoder_inchannels, decoder_n_classes, hidden_channels=decoder_hidden_channels), train_conv=True, train_encoder=True, train_decoder=True)
+  # Log hyperparameters # TODO fix this ugliness
+  wandb_logger.experiment.config.update({"encoder_window": encoder_window, "decoder_inchannels": decoder_inchannels, "decoder_n_classes": decoder_n_classes, "decoder_hidden_channels": decoder_hidden_channels})
   wandb_logger.watch(model, log_freq=1)
   # Set gpus=-1 to use all available GPUs
   # Set deterministic=True to obtain deterministic behavior for reproducibility
