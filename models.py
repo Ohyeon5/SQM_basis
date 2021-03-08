@@ -69,15 +69,13 @@ class Wrapper(pl.LightningModule):
 
     return optimizer
 
-  def training_step(self, train_batch, batch_idx):
+  def training_step(self, batch, batch_idx):
     # Move label ids to selected device
-    batch_labels = train_batch['label_id']
+    batch_labels = batch['label_id']
     # Stack images and move to selected device
-    images = torch.stack(train_batch['images'], 2) # B x C x T x H x W
+    images = torch.stack(batch['images'], 2) # B x C x T x H x W
     # Compute the model outputs
-    model_predictions = self.conv_module(images)
-    model_predictions = self.encoder_module(model_predictions)
-    model_predictions = self.decoder_module(model_predictions)
+    model_predictions = self.forward(images)
     # Compute the loss
     loss = self.criterion(model_predictions, batch_labels)
 
@@ -91,6 +89,21 @@ class Wrapper(pl.LightningModule):
       self.logger.experiment.log({'video sample': wandb.Video(video_sample)}, commit=False)
     
     return loss
+
+  def validation_step(self, batch, batch_idx):
+    # Move label ids to selected device
+    batch_labels = batch['label_id']
+    # Stack images and move to selected device
+    images = torch.stack(batch['images'], 2) # B x C x T x H x W
+    # Compute the model outputs
+    model_predictions = self.forward(images)
+    # Compute the loss
+    loss = self.criterion(model_predictions, batch_labels)
+
+    self.log('val_loss', loss.item())
+    # Log accuracy
+    self.train_acc(torch.nn.functional.softmax(model_predictions), batch_labels)
+    self.log('val_accuracy', self.train_acc)
 
   # TODO add structured saving and loading
   def save_checkpoint(self, path, save_conv = True, save_encoder = True, save_decoder = True):
