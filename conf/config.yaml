@@ -1,2 +1,10 @@
 defaults:
   - rc: phase2
+
+architecture:
+  encoder_window: 1
+  decoder_inchannels: 256
+  decoder_n_classes: 2
+  decoder_hidden_channels: 64
+
+head_n: 512

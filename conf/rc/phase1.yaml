@@ -3,3 +3,11 @@ n_epochs: 100
 batch_size: 32
 training_data_path: "D:/sqm_data/train_hdf52.h5"
 task: 'train_hand_gesture_classifier'
+do_load:
+  load_conv: False
+  load_encoder: False
+  load_decoder: False
+do_train:
+  train_conv: True
+  train_encoder: True
+  train_decoder: True
