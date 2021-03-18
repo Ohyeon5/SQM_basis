@@ -70,9 +70,8 @@ class Wrapper(pl.LightningModule):
     return optimizer
 
   def training_step(self, batch, batch_idx):
-    # Move label ids to selected device
     batch_labels = batch['label_id']
-    # Stack images and move to selected device
+    # Stack images
     images = torch.stack(batch['images'], 2) # B x C x T x H x W
     # Compute the model outputs
     model_predictions = self.forward(images)
@@ -81,7 +80,7 @@ class Wrapper(pl.LightningModule):
 
     self.log('loss', loss.item())
     # Log accuracy
-    self.train_acc(torch.nn.functional.softmax(model_predictions), batch_labels)
+    self.train_acc(torch.nn.functional.softmax(model_predictions, dim=1), batch_labels)
     self.log('accuracy', self.train_acc)
 
     if batch_idx % 128 == 0:
@@ -91,9 +90,8 @@ class Wrapper(pl.LightningModule):
     return loss
 
   def validation_step(self, batch, batch_idx):
-    # Move label ids to selected device
     batch_labels = batch['label_id']
-    # Stack images and move to selected device
+    # Stack images
     images = torch.stack(batch['images'], 2) # B x C x T x H x W
     # Compute the model outputs
     model_predictions = self.forward(images)
@@ -102,7 +100,7 @@ class Wrapper(pl.LightningModule):
 
     self.log('val_loss', loss.item())
     # Log accuracy
-    self.train_acc(torch.nn.functional.softmax(model_predictions), batch_labels)
+    self.train_acc(torch.nn.functional.softmax(model_predictions, dim=1), batch_labels)
     self.log('val_accuracy', self.train_acc)
 
   # TODO add structured saving and loading

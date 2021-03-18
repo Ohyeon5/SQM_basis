@@ -56,14 +56,16 @@ class VernierDataModule(LightningDataModule):
     val_dl = DataLoader(self.val_ds, batch_size=self.batch_size, shuffle=False, drop_last=False)
     return val_dl
 
-def train_model(training_data_path, batch_size, n_epochs, encoder_window, decoder_inchannels, decoder_n_classes, decoder_hidden_channels, ds_transform=None):
-  data_module = VernierDataModule(training_data_path, batch_size, head_n=2048, ds_transform=ds_transform)
+def train_model(training_data_path, batch_size, n_epochs, arch, do_train, head_n, ds_transform=None):
+  data_module = VernierDataModule(training_data_path, batch_size, head_n=head_n, ds_transform=ds_transform)
   # Log dataset statistics # TODO look at this again
   wandb_logger.experiment.config.update({"train_ds_len": len(data_module.train_ds), "val_ds_len": len(data_module.val_ds)})
 
-  model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(encoder_window), FF_classifier(decoder_inchannels, decoder_n_classes, hidden_channels=decoder_hidden_channels), train_conv=True, train_encoder=True, train_decoder=True)
+  model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(arch.encoder_window),
+                  FF_classifier(arch.decoder_inchannels, arch.decoder_n_classes, hidden_channels=arch.decoder_hidden_channels),
+                  train_conv=do_train.train_conv, train_encoder=do_train.train_encoder, train_decoder=do_train.train_decoder)
   # Log hyperparameters # TODO fix this ugliness
-  wandb_logger.experiment.config.update({"encoder_window": encoder_window, "decoder_inchannels": decoder_inchannels, "decoder_n_classes": decoder_n_classes, "decoder_hidden_channels": decoder_hidden_channels})
+  wandb_logger.experiment.config.update({"encoder_window": arch.encoder_window, "decoder_inchannels": arch.decoder_inchannels, "decoder_n_classes": arch.decoder_n_classes, "decoder_hidden_channels": arch.decoder_hidden_channels})
   wandb_logger.watch(model, log_freq=1)
 
   # Set gpus=-1 to use all available GPUs
@@ -79,15 +81,15 @@ def train_model(training_data_path, batch_size, n_epochs, encoder_window, decode
 
 @hydra.main(config_path='conf', config_name='config')
 def main_func(cfg: DictConfig) -> None:
-  print(OmegaConf.to_yaml(cfg))
+  #print(OmegaConf.to_yaml(cfg))
 
   wandb_logger.experiment.config.update({"num_epochs": cfg.rc.n_epochs, "batch_size": cfg.rc.batch_size})
 
   if (cfg.rc.task == 'train_hand_gesture_classifier'):
     print("Training end-to-end for hand gesture classification")
-    train_model(cfg.rc.training_data_path, cfg.rc.batch_size, cfg.rc.n_epochs, 1, 256, 2, 64, ds_transform=ToTensor())
+    train_model(cfg.rc.training_data_path, cfg.rc.batch_size, cfg.rc.n_epochs, cfg.architecture, cfg.rc.do_train, cfg.head_n, ds_transform=ToTensor())
   elif (cfg.rc.task == 'train_LR_vernier_classifier'):
     print("Training end-to-end for L/R vernier classification")
-    train_model(cfg.rc.training_data_path, cfg.rc.batch_size, cfg.rc.n_epochs, 1, 256, 2, 64)
+    train_model(cfg.rc.training_data_path, cfg.rc.batch_size, cfg.rc.n_epochs, cfg.architecture, cfg.rc.do_train, cfg.head_n)
 
 main_func()

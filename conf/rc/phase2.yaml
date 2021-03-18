@@ -3,3 +3,11 @@ n_epochs: 100
 batch_size: 32
 training_data_path: "D:/SQM_basis/vernier_data_big.hdf5"
 task: 'train_LR_vernier_classifier'
+do_load:
+  load_conv: True
+  load_encoder: True
+  load_decoder: True
+do_train:
+  train_conv: True
+  train_encoder: True #False
+  train_decoder: True
