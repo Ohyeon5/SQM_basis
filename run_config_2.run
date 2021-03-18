@@ -8,4 +8,4 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem 8192
 #SBATCH --time 1:00:00
-python -u "/home/cian/SQM_basis/main.py" --n-epochs 1 --batch-size 1 --training-data-path "/home/cian/sqm_data/train_hdf52.h5"
+python -u "/home/cian/SQM_basis/main.py"
