@@ -1,0 +1,5 @@
+# @package _group_
+n_epochs: 100
+batch_size: 32
+training_data_path: "D:/sqm_data/train_hdf52.h5"
+task: 'train_hand_gesture_classifier'

@@ -30,15 +30,6 @@ import hydra
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.loggers import WandbLogger
 
-do_train_hand_gesture_classifier = False
-do_train_LR_vernier_classifier = True
-
-#wandb.init(project="lr-vernier-classification", notes=command_line_args.wandb_notes if command_line_args.wandb_notes else "N/A", config={
-  #"num_epochs": command_line_args.n_epochs,
-  #"batch_size": command_line_args.batch_size
-#})
-#config = wandb.config
-
 wandb_logger = WandbLogger(project="lr-vernier-classification")
 
 pl.seed_everything(42) # seed all PRNGs for reproducibility
@@ -58,7 +49,6 @@ class VernierDataModule(LightningDataModule):
     self.train_ds, self.val_ds = random_split(self.dataset, [n_train, n_val])
 
   def train_dataloader(self):
-    #config.update({"dataset_size": len(training_dataset)})
     train_dl = DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=False, drop_last=False)
     return train_dl
 
@@ -69,7 +59,7 @@ class VernierDataModule(LightningDataModule):
 def train_model(training_data_path, batch_size, n_epochs, encoder_window, decoder_inchannels, decoder_n_classes, decoder_hidden_channels, ds_transform=None):
   data_module = VernierDataModule(training_data_path, batch_size, head_n=2048, ds_transform=ds_transform)
   # Log dataset statistics # TODO look at this again
-  wandb_logger.experiment.config.update({"train_ds_len": len(data_module.train_ds), "val_ds_len": len(data_module.val_ds), "batch_size": data_module.batch_size})
+  wandb_logger.experiment.config.update({"train_ds_len": len(data_module.train_ds), "val_ds_len": len(data_module.val_ds)})
 
   model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(encoder_window), FF_classifier(decoder_inchannels, decoder_n_classes, hidden_channels=decoder_hidden_channels), train_conv=True, train_encoder=True, train_decoder=True)
   # Log hyperparameters # TODO fix this ugliness
@@ -87,15 +77,17 @@ def train_model(training_data_path, batch_size, n_epochs, encoder_window, decode
   model.to_onnx("test_model.onnx", input_sample)
   #model.save_checkpoint("latest_checkpoint_phase2.tar")
 
-@hydra.main(config_name='config')
+@hydra.main(config_path='conf', config_name='config')
 def main_func(cfg: DictConfig) -> None:
   print(OmegaConf.to_yaml(cfg))
 
-  if (do_train_hand_gesture_classifier):
+  wandb_logger.experiment.config.update({"num_epochs": cfg.rc.n_epochs, "batch_size": cfg.rc.batch_size})
+
+  if (cfg.rc.task == 'train_hand_gesture_classifier'):
     print("Training end-to-end for hand gesture classification")
-    train_model(cfg.training.training_data_path, cfg.training.batch_size, cfg.training.n_epochs, 1, 256, 2, 64, ds_transform=ToTensor())
-  elif (do_train_LR_vernier_classifier):
+    train_model(cfg.rc.training_data_path, cfg.rc.batch_size, cfg.rc.n_epochs, 1, 256, 2, 64, ds_transform=ToTensor())
+  elif (cfg.rc.task == 'train_LR_vernier_classifier'):
     print("Training end-to-end for L/R vernier classification")
-    train_model(cfg.training.training_data_path, cfg.training.batch_size, cfg.training.n_epochs, 1, 256, 2, 64)
+    train_model(cfg.rc.training_data_path, cfg.rc.batch_size, cfg.rc.n_epochs, 1, 256, 2, 64)
 
 main_func()

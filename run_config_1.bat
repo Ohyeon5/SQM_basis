@@ -1,1 +1,0 @@
-python main.py --n-epochs 20 --batch-size 32 --training-data-path "D:/sqm_data/train_hdf52.h5"

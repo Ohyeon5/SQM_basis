@@ -1,5 +1,0 @@
-training:
-  n_epochs: 100
-  batch_size: 32
-  training_data_path: "D:/SQM_basis/vernier_data_big.hdf5"
-  wandb_notes: 'Trying Hydra'
