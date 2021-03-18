@@ -1,5 +1,5 @@
 # @package _group_
-n_epochs: 100
+n_epochs: 50
 batch_size: 32
 training_data_path: "D:/SQM_basis/vernier_data_big.hdf5"
 task: 'train_LR_vernier_classifier'
