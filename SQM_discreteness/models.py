@@ -330,8 +330,6 @@ class ConvLSTM_disc_low(nn.Module):
 			imgs.append(mm[0][:,-1,:,:,:])
 		img = torch.stack(imgs,1) # stacked img: 5D tensor => B x T x C x H x W
 		
-		# print("Profile GPU in convlstm disc low")
-		# profile_gpu()
 		img = self.secondary_convlstm(img)  	# img: 5D tensor => B x T x Filters x H x W  
 
 		# print("Shape of secondary convlstm output: len {}, shape {}".format(len(img), img[0].shape))
