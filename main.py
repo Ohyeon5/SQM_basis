@@ -30,7 +30,7 @@ import hydra
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.loggers import WandbLogger
 
-wandb_logger = WandbLogger(project="lr-vernier-classification")
+wandb_logger = WandbLogger(project="lr-vernier-classification", job_type='train')
 
 pl.seed_everything(42) # seed all PRNGs for reproducibility
 

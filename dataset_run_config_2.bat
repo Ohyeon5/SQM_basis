@@ -1,1 +1,1 @@
-python -m create_vernier_dataset --file-path "vernier_data_big.hdf5" --n-sequences 4096 --n-frames 2
+python -m create_vernier_dataset --file-path "vernier_data_bigs.hdf5" --n-sequences 256 --n-frames 2
