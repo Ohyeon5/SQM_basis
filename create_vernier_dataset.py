@@ -4,6 +4,8 @@ import numpy as np
 
 from dataset import BatchMaker
 
+import wandb
+
 arg_parser = argparse.ArgumentParser(description="Generate a dataset of SQM videos")
 arg_parser.add_argument('--file-path', type=str)
 arg_parser.add_argument('--n-sequences', type=int)
@@ -15,6 +17,10 @@ arg_parser.add_argument('--n-channels', type=int, default=3)
 command_line_args = arg_parser.parse_args()
 
 if __name__ == '__main__':
+  run = wandb.init(project="lr-vernier-classification", job_type='dataset')
+
+  ds_artifact = wandb.Artifact('lr_vernier_dataset_test.hdf5', type='dataset')
+
   # Set up the dataset
   print("Creating a batch maker")
 
@@ -38,3 +44,7 @@ if __name__ == '__main__':
       group.create_dataset('images', data=batch_frames)
       group.create_dataset('label', data='placeholder') # TODO sort this out
       group.create_dataset('label_id', data=batch_label.astype('int64'))
+  
+  ds_artifact.add_file(command_line_args.file_path)
+
+  run.log_artifact(ds_artifact)
