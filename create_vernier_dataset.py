@@ -19,7 +19,7 @@ command_line_args = arg_parser.parse_args()
 if __name__ == '__main__':
   run = wandb.init(project="lr-vernier-classification", job_type='dataset')
 
-  ds_artifact = wandb.Artifact('lr_vernier_dataset_test.hdf5', type='dataset', metadata=vars(command_line_args))
+  ds_artifact = wandb.Artifact('vernier_decode_1', type='dataset', metadata=vars(command_line_args))
 
   # Set up the dataset
   print("Creating a batch maker")
