@@ -219,12 +219,12 @@ if __name__ == '__main__':
   import imageio  # conda install -c conda-forge imageio
   import os
   from numpy import savez, savetxt
-  set_type     = 'decode'    # 'recons', 'decode' or 'sqm'
-  condition    = 'V-PV3'  # 'V', 'V-PVn' or 'V-AVn', n > 0
+  set_type     = 'sqm'    # 'recons', 'decode' or 'sqm'
+  condition    = 'V'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 1 # number of objects in one video sequence
   n_frames     = 13 # length of video sequence in frames
   scale        = 1
-  batch_s      = 1 # number of video sequences to generate simultaneously
+  batch_s      = 4 # number of video sequences to generate simultaneously
   n_channels   = 1 # number of channels of video sequences
   batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, n_channels), condition)
   if set_type == 'recons':
