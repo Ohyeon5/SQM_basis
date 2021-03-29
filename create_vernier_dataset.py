@@ -8,19 +8,21 @@ from tqdm import tqdm
 
 import wandb
 
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 import hydra
+
+# TODO remember to use sweeps instead of manually creating every condition
 
 @hydra.main(config_path='ds_conf', config_name='config')
 def main_func(cfg: DictConfig) -> None:
   run = wandb.init(project="lr-vernier-classification", job_type='dataset')
 
-  ds_artifact = wandb.Artifact(cfg.artifact_name, type='dataset', metadata=dict(cfg))
+  ds_artifact = wandb.Artifact("videos_{}_{}".format(cfg.sequence_type, cfg.condition), type='dataset', metadata=dict(cfg))
 
   # Set up the dataset
   print("Creating a batch maker")
 
-  batch_maker = BatchMaker('decode', cfg.n_objects, cfg.n_sequences, cfg.n_frames, (64*cfg.scale, 64*cfg.scale, cfg.n_channels), None)
+  batch_maker = BatchMaker(cfg.sequence_type, cfg.n_objects, cfg.n_sequences, cfg.n_frames, (64*cfg.scale, 64*cfg.scale, cfg.n_channels), cfg.condition)
 
   print("Generating batches (by frame)")
 

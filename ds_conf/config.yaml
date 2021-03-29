@@ -1,6 +1,7 @@
-artifact_name: ???
 file_path: ???
 n_sequences: ???
+sequence_type: ???
+condition: 'V'
 n_objects: 1
 n_frames: 13
 scale: 1.0

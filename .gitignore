@@ -26,3 +26,4 @@ lightning_logs/*
 
 # Hydra outputs
 outputs/*
+multirun/*
