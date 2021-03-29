@@ -5,6 +5,7 @@ from skimage.draw import circle, ellipse, rectangle, polygon
 # from skimage.morphology import square, rectangle, diamond, disk, octagon, star
 from skimage.transform import resize, rotate
 
+from tqdm import tqdm
 
 # Neil class
 class Neil():
@@ -190,7 +191,7 @@ class BatchMaker():
 	# Batch making function (generating batch_s dynamic sequences)
 	def generate_batch(self):
 		self.init_batch()
-		for t in range(self.n_frames):
+		for t in tqdm(range(self.n_frames)):
 	
 			# Compute and draw moving objects
 			frame = self.window*1

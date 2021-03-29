@@ -16,6 +16,8 @@ from models import Wrapper
 from SQM_discreteness.models import Primary_conv3D, ConvLSTM_disc_low, ConvLSTM_disc_high, FF_classifier
 from SQM_discreteness.hdf5_loader import HDF5Dataset, ToTensor
 
+import os
+
 import numpy as np
 
 import wandb
@@ -28,9 +30,23 @@ from omegaconf import DictConfig, OmegaConf
 import hydra
 
 from pytorch_lightning import LightningDataModule
+from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
 
-wandb_logger = WandbLogger(project="lr-vernier-classification", job_type='train')
+@dataclass
+class LoadConfig:
+  load_conv: bool = False
+  load_encoder: bool = False
+  load_decoder: bool = False
+
+@dataclass
+class TrainConfig:
+  train_conv: bool =  True
+  train_encoder: bool = True
+  train_decoder: bool = True
+
+# Include log_model=True to store checkpoints on wandb server
+wandb_logger = WandbLogger(project="lr-vernier-classification", log_model=True, job_type='train')
 
 pl.seed_everything(42) # seed all PRNGs for reproducibility
 
@@ -58,7 +74,7 @@ class VernierDataModule(LightningDataModule):
 
 def train_model(training_data_path, batch_size, n_epochs, arch, do_train, head_n, ds_transform=None):
   data_module = VernierDataModule(training_data_path, batch_size, head_n=head_n, ds_transform=ds_transform)
-  # Log dataset statistics # TODO look at this again
+  # Log dataset statistics
   wandb_logger.experiment.config.update({"train_ds_len": len(data_module.train_ds), "val_ds_len": len(data_module.val_ds)})
 
   model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(arch.encoder_window),
@@ -70,7 +86,8 @@ def train_model(training_data_path, batch_size, n_epochs, arch, do_train, head_n
 
   # Set gpus=-1 to use all available GPUs
   # Set deterministic=True to obtain deterministic behavior for reproducibility
-  trainer = pl.Trainer(gpus=1, logger=wandb_logger, log_every_n_steps=4, max_epochs=n_epochs, deterministic=True)
+  # Use early stopping for training
+  trainer = pl.Trainer(gpus=1, logger=wandb_logger, log_every_n_steps=4, max_epochs=n_epochs, callbacks=[EarlyStopping('loss')], deterministic=True)
 
   #model.load_checkpoint("latest_checkpoint.tar", load_conv=False, load_encoder=False, load_decoder=False)
   trainer.fit(model, data_module)
@@ -81,8 +98,6 @@ def train_model(training_data_path, batch_size, n_epochs, arch, do_train, head_n
 
 @hydra.main(config_path='conf', config_name='config')
 def main_func(cfg: DictConfig) -> None:
-  #print(OmegaConf.to_yaml(cfg))
-
   wandb_logger.experiment.config.update({"num_epochs": cfg.rc.n_epochs, "batch_size": cfg.rc.batch_size})
 
   if (cfg.rc.task == 'train_hand_gesture_classifier'):
@@ -90,6 +105,12 @@ def main_func(cfg: DictConfig) -> None:
     train_model(cfg.rc.training_data_path, cfg.rc.batch_size, cfg.rc.n_epochs, cfg.architecture, cfg.rc.do_train, cfg.head_n, ds_transform=ToTensor())
   elif (cfg.rc.task == 'train_LR_vernier_classifier'):
     print("Training end-to-end for L/R vernier classification")
-    train_model(cfg.rc.training_data_path, cfg.rc.batch_size, cfg.rc.n_epochs, cfg.architecture, cfg.rc.do_train, cfg.head_n)
+    raw_data_artifact = wandb_logger.experiment.use_artifact('vernier_decode_1:latest')
+    raw_dataset = raw_data_artifact.download()
+    print("Download done!")
+    print(raw_dataset)
+    print(list(os.scandir(raw_dataset)))
+    #train_model(cfg.rc.training_data_path, cfg.rc.batch_size, cfg.rc.n_epochs, cfg.architecture, cfg.rc.do_train, cfg.head_n)
+    train_model(raw_dataset, cfg.rc.batch_size, cfg.rc.n_epochs, cfg.architecture, cfg.rc.do_train, cfg.head_n)
 
 main_func()

@@ -1,0 +1,13 @@
+# @package _group_
+n_epochs: 100 # TODO: in general, fix this config
+batch_size: 32
+training_data_path: "D:/sqm_data/train_hdf52.h5" # TODO change
+task: 'train_hand_gesture_classifier'
+do_load:
+  load_conv: True
+  load_encoder: True
+  load_decoder: True
+do_train:
+  train_conv: False
+  train_encoder: False
+  train_decoder: False
