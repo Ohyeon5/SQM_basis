@@ -15,7 +15,7 @@ import hydra
 def main_func(cfg: DictConfig) -> None:
   run = wandb.init(project="lr-vernier-classification", job_type='dataset')
 
-  ds_artifact = wandb.Artifact('vernier_decode_1', type='dataset', metadata=dict(cfg))
+  ds_artifact = wandb.Artifact(cfg.artifact_name, type='dataset', metadata=dict(cfg))
 
   # Set up the dataset
   print("Creating a batch maker")
