@@ -9,6 +9,8 @@ import torch.nn.functional as F
 
 from SQM_discreteness.convlstm_SreenivasVRao import *
 
+import pytorch_lightning as pl
+
 ###############
 #   Networks  #
 ###############
@@ -225,12 +227,12 @@ class Net_continuous(nn.Module):
 ###########################
 
 # 1) Primary feature extraction conv layer
-class Primary_conv3D(nn.Module):
+class Primary_conv3D(pl.LightningModule):
 	'''
 	Primary feedforward feature extraction convolution layers 
 	'''
 	def __init__(self, norm_type='bn',conv_n_feats=[3, 32, 64]):
-		super(Primary_conv3D, self).__init__()
+		super().__init__()
 
 		# initial parameter settings
 		self.conv_n_feats = conv_n_feats

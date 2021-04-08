@@ -221,7 +221,7 @@ if __name__ == '__main__':
   import os
   from numpy import savez, savetxt
   set_type     = 'sqm'    # 'recons', 'decode' or 'sqm'
-  condition    = 'V'  # 'V', 'V-PVn' or 'V-AVn', n > 0
+  condition    = 'V-PV1'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 1 # number of objects in one video sequence
   n_frames     = 13 # length of video sequence in frames
   scale        = 1
@@ -235,8 +235,6 @@ if __name__ == '__main__':
   batch_arrays = [np.stack([batch_frames[t][b] for t in range(n_frames)]) for b in range(batch_s)]
   consolidated_array = np.stack([batch_arrays[b] for b in range(batch_s)])
   
-  savez('val_vernier_{}.npz'.format(batch_s), consolidated_array)
-  savetxt('val_vernier_{}_labels.csv'.format(batch_s), batch_labels)
   gif_name        = 'test_output.gif'
   display_frames  = []
   for t in range(n_frames):

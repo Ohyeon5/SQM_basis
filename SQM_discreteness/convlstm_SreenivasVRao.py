@@ -39,14 +39,8 @@ class ConvLSTMCell(nn.Module):
                               padding=self.padding,
                               bias=self.bias)
 
-    def _apply(self, fn):
-        super(ConvLSTMCell, self)._apply(fn)
-        
-        self.delayed_apply_fn = fn
-
     def forward(self, x, cur_state):    
         h_cur, c_cur = cur_state
-        h_cur, c_cur = self.delayed_apply_fn(h_cur), self.delayed_apply_fn(c_cur)
         
         combined = torch.cat([x, h_cur], dim=1)  # concatenate along channel axis
         

@@ -33,6 +33,10 @@ from pytorch_lightning import LightningDataModule
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
 
+from dataclasses import dataclass
+
+from dataset import BatchMaker
+
 @dataclass
 class LoadConfig:
   load_conv: bool = False
@@ -46,7 +50,7 @@ class TrainConfig:
   train_decoder: bool = True
 
 # Include log_model=True to store checkpoints on wandb server
-wandb_logger = WandbLogger(project="lr-vernier-classification", log_model=True, job_type='train')
+wandb_logger = WandbLogger(project="lr-vernier-classification-temp", entity="davethephysicist", log_model=True, job_type='train')
 
 pl.seed_everything(42) # seed all PRNGs for reproducibility
 
@@ -77,40 +81,43 @@ def train_model(training_data_path, batch_size, n_epochs, arch, do_train, head_n
   # Log dataset statistics
   wandb_logger.experiment.config.update({"train_ds_len": len(data_module.train_ds), "val_ds_len": len(data_module.val_ds)})
 
-  model = Wrapper(Primary_conv3D(), ConvLSTM_disc_low(arch.encoder_window),
-                  FF_classifier(arch.decoder_inchannels, arch.decoder_n_classes, hidden_channels=arch.decoder_hidden_channels),
+  model = Wrapper(Primary_conv3D, {}, ConvLSTM_disc_low, {'window': arch.encoder_window},
+                  FF_classifier, {'in_channels': arch.decoder_inchannels, 'n_classes': arch.decoder_n_classes, 'hidden_channels': arch.decoder_hidden_channels},
                   train_conv=do_train.train_conv, train_encoder=do_train.train_encoder, train_decoder=do_train.train_decoder)
-  # Log hyperparameters # TODO fix this ugliness
-  wandb_logger.experiment.config.update({"encoder_window": arch.encoder_window, "decoder_inchannels": arch.decoder_inchannels, "decoder_n_classes": arch.decoder_n_classes, "decoder_hidden_channels": arch.decoder_hidden_channels})
+  # Log hyperparameters
   wandb_logger.watch(model, log_freq=1)
 
   # Set gpus=-1 to use all available GPUs
   # Set deterministic=True to obtain deterministic behavior for reproducibility
   # Use early stopping for training
-  trainer = pl.Trainer(gpus=1, logger=wandb_logger, log_every_n_steps=4, max_epochs=n_epochs, callbacks=[EarlyStopping('loss')], deterministic=True)
+  trainer = pl.Trainer(gpus=1, logger=wandb_logger, log_every_n_steps=4, min_epochs=16, max_epochs=n_epochs, callbacks=[EarlyStopping('loss', patience=10)], deterministic=True)
 
-  #model.load_checkpoint("latest_checkpoint.tar", load_conv=False, load_encoder=False, load_decoder=False)
   trainer.fit(model, data_module)
 
   input_sample = torch.randn((1, 3, 2, 64, 64))
-  model.to_onnx("test_model.onnx", input_sample)
-  #model.save_checkpoint("latest_checkpoint_phase2.tar")
+  model.to_onnx("portable_model.onnx", input_sample)
+
+  return trainer
 
 @hydra.main(config_path='conf', config_name='config')
 def main_func(cfg: DictConfig) -> None:
   wandb_logger.experiment.config.update({"num_epochs": cfg.rc.n_epochs, "batch_size": cfg.rc.batch_size})
+
+  model_artifact = wandb.Artifact("model_{}".format(cfg.rc.task), type='model', metadata=dict(cfg))
 
   if (cfg.rc.task == 'train_hand_gesture_classifier'):
     print("Training end-to-end for hand gesture classification")
     train_model(cfg.rc.training_data_path, cfg.rc.batch_size, cfg.rc.n_epochs, cfg.architecture, cfg.rc.do_train, cfg.head_n, ds_transform=ToTensor())
   elif (cfg.rc.task == 'train_LR_vernier_classifier'):
     print("Training end-to-end for L/R vernier classification")
-    raw_data_artifact = wandb_logger.experiment.use_artifact('vernier_decode_1:latest')
+    raw_data_artifact = wandb_logger.experiment.use_artifact('vernier_decode_1:v0')
     raw_dataset = raw_data_artifact.download()
     print("Download done!")
-    print(raw_dataset)
-    print(list(os.scandir(raw_dataset)))
-    #train_model(cfg.rc.training_data_path, cfg.rc.batch_size, cfg.rc.n_epochs, cfg.architecture, cfg.rc.do_train, cfg.head_n)
-    train_model(raw_dataset, cfg.rc.batch_size, cfg.rc.n_epochs, cfg.architecture, cfg.rc.do_train, cfg.head_n)
+    trainer = train_model(os.path.join(raw_dataset, 'vernier_decode_1.hdf5'), cfg.rc.batch_size, cfg.rc.n_epochs, cfg.architecture, cfg.rc.do_train, cfg.head_n)
+
+    trainer.save_checkpoint("final_model.ckpt")
+    model_artifact.add_file("final_model.ckpt")
+
+  wandb_logger.experiment.log_artifact(model_artifact)
 
 main_func()
