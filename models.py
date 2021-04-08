@@ -22,11 +22,12 @@ class Wrapper(pl.LightningModule):
       The decoder module    
   """
 
-  def __init__(self, conv_module, encoder_module, decoder_module, criterion=torch.nn.CrossEntropyLoss(), train_conv=False, train_encoder=False, train_decoder=False):
+  def __init__(self, conv_module, conv_module_hparams, encoder_module, encoder_module_hparams, decoder_module, decoder_module_hparams, 
+                criterion=torch.nn.CrossEntropyLoss(), train_conv=False, train_encoder=False, train_decoder=False):
     super().__init__()
-    self.conv_module = conv_module
-    self.encoder_module = encoder_module
-    self.decoder_module = decoder_module
+    self.conv_module = conv_module(**conv_module_hparams)
+    self.encoder_module = encoder_module(**encoder_module_hparams)
+    self.decoder_module = decoder_module(**decoder_module_hparams)
 
     self.criterion = criterion
 
@@ -34,7 +35,8 @@ class Wrapper(pl.LightningModule):
     self.train_encoder = train_encoder
     self.train_decoder = train_decoder
 
-    self.save_hyperparameters('train_conv', 'train_encoder', 'train_decoder')
+    self.save_hyperparameters('conv_module', 'conv_module_hparams', 'encoder_module', 'encoder_module_hparams',
+                              'decoder_module', 'decoder_module_hparams', 'train_conv', 'train_encoder', 'train_decoder')
 
     # Metrics
     self.train_acc = pl.metrics.Accuracy()
@@ -101,7 +103,7 @@ class Wrapper(pl.LightningModule):
     self.log('val_loss', loss.item())
     # Log accuracy
     self.train_acc(torch.nn.functional.softmax(model_predictions, dim=1), batch_labels)
-    self.log('val_accuracy', self.train_acc)
+    self.log('val_accuracy', self.train_acc) 
 
   # TODO add structured saving and loading
   def save_checkpoint(self, path, save_conv = True, save_encoder = True, save_decoder = True):
