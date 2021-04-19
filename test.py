@@ -60,15 +60,23 @@ def main_func(cfg: DictConfig) -> None:
     images = torch.stack(batches_frames, 2)
 
     # B x C x T x H x W
-    pred = model(images)
+    model_predictions = model(images)
 
     print("Condition", condition)
 
-    print("Prediction", pred)
+    print("Prediction", model_predictions)
 
     print("Ground truth", batches_label)
 
     # If pro-vernier, should be reinforced toward ground truth
     # If anti-vernier, should be reinforced toward opposite of ground truth
+
+    print("Cross entropy: ", torch.nn.functional.cross_entropy(model_predictions, torch.from_numpy(batches_label).type(torch.LongTensor)))
+
+    softmaxed = torch.nn.functional.softmax(model_predictions, dim=1)
+    softmaxed = softmaxed.detach().numpy()
+    prediction_label = np.argmax(softmaxed)
+
+    print(prediction_label == batches_label[0])
 
 main_func()
