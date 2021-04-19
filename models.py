@@ -103,7 +103,7 @@ class Wrapper(pl.LightningModule):
     self.log('val_loss', loss.item())
     # Log accuracy
     self.train_acc(torch.nn.functional.softmax(model_predictions, dim=1), batch_labels)
-    self.log('val_accuracy', self.train_acc) 
+    self.log('val_accuracy', self.train_acc)
 
   # TODO add structured saving and loading
   def save_checkpoint(self, path, save_conv = True, save_encoder = True, save_decoder = True):

@@ -219,7 +219,7 @@ if __name__ == '__main__':
   import pyglet   # conda install -c conda-forge pyglet
   import imageio  # conda install -c conda-forge imageio
   import os
-  from numpy import savez, savetxt
+  
   set_type     = 'sqm'    # 'recons', 'decode' or 'sqm'
   condition    = 'V-PV1'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 1 # number of objects in one video sequence

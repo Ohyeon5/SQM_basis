@@ -39,8 +39,19 @@ class ConvLSTMCell(nn.Module):
                               padding=self.padding,
                               bias=self.bias)
 
+        self.has_delayed_apply_fn = False
+
+    def _apply(self, fn):
+        super(ConvLSTMCell, self)._apply(fn)
+        
+        self.delayed_apply_fn = fn
+
+        self.has_delayed_apply_fn = True
+
     def forward(self, x, cur_state):    
         h_cur, c_cur = cur_state
+        if self.has_delayed_apply_fn:
+          h_cur, c_cur = self.delayed_apply_fn(h_cur), self.delayed_apply_fn(c_cur)
         
         combined = torch.cat([x, h_cur], dim=1)  # concatenate along channel axis
         
@@ -191,30 +202,3 @@ class ConvBLSTM(nn.Module):
         ycat = torch.cat((y_out_fwd, y_out_rev), dim=2)
         
         return ycat
-
-
-if __name__ == "__main__":
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print('Using '+str(device))
-
-    x1 = torch.randn([5, 32, 60, 60]).to(device)
-    x2 = torch.randn([5, 32, 60, 60]).to(device)
-    x3 = torch.randn([5, 32, 60, 60]).to(device)
-
-    # cblstm = ConvBLSTM(in_channels=32, hidden_channels=64, kernel_size=(3, 3), num_layers=1, batch_first=True).to(device)
-
-    # x_fwd = torch.stack([x1, x2, x3], dim=1)
-    # x_rev = torch.stack([x3, x2, x1], dim=1)
-
-    # out = cblstm(x_fwd, x_rev)
-    # print (out.shape)
-    # out.sum().backward()
-
-    # Oh-hyeon's convLSTM explorations
-    clstm = ConvLSTM(in_channels=32, hidden_channels=64, kernel_size=(3,3), num_layers=1, batch_first=True, return_all_layers=False, device=device).to(device)
-    x_fwd = torch.stack([x1, x2, x3], dim=1)
-    out,_ = clstm(x_fwd)
-
-    print(out[0].shape)
-    print(clstm)
