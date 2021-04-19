@@ -1,0 +1,5 @@
+defaults:
+  - model: net_disc_high
+  - rc: phase2
+
+head_n: 512

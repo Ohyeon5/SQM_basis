@@ -1,0 +1,7 @@
+# @package _group_
+model_init:
+  _target_: SQM_discreteness.models.Net_disc_high
+  n_classes: 2
+  window: 4
+
+arch_id: Net_disc_high

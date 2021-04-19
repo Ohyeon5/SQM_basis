@@ -34,9 +34,6 @@ class ExperimentDataModule(LightningDataModule):
 def main_func(cfg: DictConfig) -> None:
   print("Testing model")
 
-  # TODO check if verniers different sides in datasets!
-  # TODO introduce tools + put them at the start
-
   model_artifact = wandb_logger.experiment.use_artifact('model_train_LR_vernier_classifier:latest')
   model_path = model_artifact.download()
   print("Download done!")
@@ -51,7 +48,7 @@ def main_func(cfg: DictConfig) -> None:
 
   model = Wrapper.load_from_checkpoint(os.path.join(model_path, 'final_model.ckpt'))
 
-  conditions = ['V-PV{}'.format(n) for n in range(5)] + ['V-AV{}'.format(n) for n in range(5)]
+  conditions = ['V-PV{}'.format(n) for n in range(13)] + ['V-AV{}'.format(n) for n in range(13)]
 
   for condition in conditions:
     batch_maker = BatchMaker('sqm', 1, 1, 13, (64, 64, 3), condition)
@@ -60,17 +57,18 @@ def main_func(cfg: DictConfig) -> None:
 
     batches_frames = [torch.from_numpy(np.moveaxis(batch_frames, -1, 1).astype('float32')) for batch_frames in batches_frames]
 
-    #print(batches_frames[0].shape)
-
     images = torch.stack(batches_frames, 2)
-
-    #print(images.shape)
 
     # B x C x T x H x W
     pred = model(images)
 
-    print("Pred", pred)
+    print("Condition", condition)
+
+    print("Prediction", pred)
 
     print("Ground truth", batches_label)
+
+    # If pro-vernier, should be reinforced toward ground truth
+    # If anti-vernier, should be reinforced toward opposite of ground truth
 
 main_func()

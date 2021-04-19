@@ -11,3 +11,4 @@ do_train:
   train_conv: True
   train_encoder: True
   train_decoder: True
+start_model: 'blank'

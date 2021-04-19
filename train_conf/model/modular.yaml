@@ -1,0 +1,23 @@
+# @package _group_
+model_init:
+  _target_: models.Wrapper
+
+  conv_module: Primary_conv3D
+  conv_module_hparams: {}
+
+  encoder_module: ConvLSTM_disc_low
+  encoder_module_hparams:
+    window: 1
+
+  decoder_module: FF_classifier\
+  decoder_module_hparams:
+    inchannels: 256
+    n_classes: 2
+    hidden_channels: 64
+
+  train_conv: True
+  train_encoder: True
+  train_decoder: True
+
+#arch_id: ${model_init.conv_module}-${model_init.encoder_module}-${model_init.decoder_module}
+arch_id: Primary_conv3D-ConvLSTM_disc_low-FF_classifier
