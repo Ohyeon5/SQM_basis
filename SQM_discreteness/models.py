@@ -160,7 +160,7 @@ class Net_disc_low(nn.Module):
       self.fc_n_hidden = fc_n_hidden
 
     # primary convolution blocks for preprocessing and feature extraction
-    #TODO what is up with n_convBlocks???
+    #TODO what is up with n_convBlocks??? -> safe to delete
     #self.primary_conv3D = Primary_conv3D(n_convBlocks=n_convBlocks, norm_type=norm_type, conv_n_feats=self.conv_n_feats)
     self.primary_conv3D = Primary_conv3D(norm_type=norm_type, conv_n_feats=self.conv_n_feats)
 
