@@ -154,7 +154,7 @@ class Neil():
 class BatchMaker():
 
   # Initiates all values unchanged from batch to batch
-  def __init__(self, set_type, n_objects, batch_s, n_frames, im_dims, condition='V'):
+  def __init__(self, set_type, n_objects, batch_s, n_frames, im_dims, condition='V', random_start_pos=False, random_size=False):
     self.set_type   = set_type
     self.Object     = Neil  # for now
     self.n_objects  = n_objects
@@ -168,6 +168,9 @@ class BatchMaker():
     self.wn_w       = int(im_dims[1]*self.scale)
     self.gravity    = 0.0
     self.friction   = 0.0
+
+    self.random_start_pos = random_start_pos
+    self.random_size = random_size
   
   # Initialize batch, objects (size, position, velocities, etc.) and background
   def init_batch(self):
@@ -178,7 +181,7 @@ class BatchMaker():
     self.window   = 127*np.ones((self.batch_s, self.wn_h, self.wn_w, self.n_chans), dtype=int)
     for _ in range(self.n_objects):
       self.objects.append(self.Object(self.set_type, self.objects, self.batch_s, self.scale,
-                  self.n_frames, self.n_chans, self.wn_h, self.wn_w, self.gravity, random_start_pos=True, random_start_speed=False, random_size=True))
+                  self.n_frames, self.n_chans, self.wn_h, self.wn_w, self.gravity, random_start_pos=self.random_start_pos, random_start_speed=False, random_size=self.random_size))
     self.bg_color = rng().randint(0, 80, (self.batch_s, self.n_chans))  # if set_type == 'recons' else 40*np.ones((self.batch_s, self.n_chans))
     for b in range(self.batch_s):
       for c in range(self.n_chans):
