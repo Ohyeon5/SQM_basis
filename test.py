@@ -48,10 +48,13 @@ def main_func(cfg: DictConfig) -> None:
 
   model = Wrapper.load_from_checkpoint(os.path.join(model_path, 'final_model.ckpt'))
 
-  conditions = ['V-PV{}'.format(n) for n in range(13)] + ['V-AV{}'.format(n) for n in range(13)]
+  pv_conditions = ['V-PV{}'.format(n) for n in range(13)]
+  av_conditions = ['V-AV{}'.format(n) for n in range(13)]
+  conditions = pv_conditions + av_conditions
 
   for condition in conditions:
-    batch_maker = BatchMaker('sqm', 1, 1, 13, (64, 64, 3), condition)
+    batch_size = 10
+    batch_maker = BatchMaker('sqm', 1, batch_size, 13, (64, 64, 3), condition, random_start_pos=False, random_size=False)
 
     batches_frames, batches_label = batch_maker.generate_batch()
 
@@ -75,8 +78,10 @@ def main_func(cfg: DictConfig) -> None:
 
     softmaxed = torch.nn.functional.softmax(model_predictions, dim=1)
     softmaxed = softmaxed.detach().numpy()
-    prediction_label = np.argmax(softmaxed)
+    prediction_label = np.argmax(softmaxed, axis=1)
 
-    print(prediction_label == batches_label[0])
+    accuracy = sum(prediction_label == batches_label) / len(prediction_label)
+
+    print(accuracy)
 
 main_func()
