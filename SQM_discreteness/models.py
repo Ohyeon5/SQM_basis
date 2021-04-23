@@ -40,9 +40,7 @@ class Net_disc_high(pl.LightningModule):
       self.fc_n_hidden = fc_n_hidden
 
     # primary convolution blocks for preprocessing and feature extraction
-    #TODO what is up with n_convBlocks???
-    #self.primary_conv3D = Primary_conv3D(n_convBlocks=n_convBlocks, norm_type=norm_type,conv_n_feats=self.conv_n_feats)
-    self.primary_conv3D = Primary_conv3D(norm_type=norm_type,conv_n_feats=self.conv_n_feats)
+    self.primary_conv3D = Primary_conv3D(norm_type=norm_type, conv_n_feats=self.conv_n_feats)
 
     # Two layers of convLSTM
     self.primary_convlstm   = ConvLSTM_block(in_channels=self.conv_n_feats[n_convBlocks],hidden_channels=self.clstm_hidden[0], 
@@ -160,8 +158,6 @@ class Net_disc_low(nn.Module):
       self.fc_n_hidden = fc_n_hidden
 
     # primary convolution blocks for preprocessing and feature extraction
-    #TODO what is up with n_convBlocks??? -> safe to delete
-    #self.primary_conv3D = Primary_conv3D(n_convBlocks=n_convBlocks, norm_type=norm_type, conv_n_feats=self.conv_n_feats)
     self.primary_conv3D = Primary_conv3D(norm_type=norm_type, conv_n_feats=self.conv_n_feats)
 
     # Two layers of convLSTM
@@ -237,7 +233,7 @@ class Net_continuous(nn.Module):
       self.fc_n_hidden = fc_n_hidden
 
     # primary convolution blocks for preprocessing and feature extraction
-    self.primary_conv3D = Primary_conv3D(n_convBlocks=n_convBlocks, norm_type=norm_type,conv_n_feats=self.conv_n_feats)
+    self.primary_conv3D = Primary_conv3D(norm_type=norm_type,conv_n_feats=self.conv_n_feats)
 
     # Two layers of convLSTM
     self.convlstm   = ConvLSTM(in_channels=self.conv_n_feats[n_convBlocks], 
