@@ -16,6 +16,8 @@ import torch
 
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 wandb_logger = WandbLogger(project="lr-vernier-classification-temp", entity="davethephysicist", job_type='test')
 
 pl.seed_everything(42) # seed all PRNGs for reproducibility
@@ -52,8 +54,11 @@ def main_func(cfg: DictConfig) -> None:
   av_conditions = ['V-AV{}'.format(n) for n in range(13)]
   conditions = pv_conditions + av_conditions
 
-  for condition in conditions:
-    batch_size = 10
+  pv_accuracy = []
+  av_accuracy = []
+
+  def test_batch(condition):
+    batch_size = 2
     batch_maker = BatchMaker('sqm', 1, batch_size, 13, (64, 64, 3), condition, random_start_pos=False, random_size=False)
 
     batches_frames, batches_label = batch_maker.generate_batch()
@@ -65,16 +70,16 @@ def main_func(cfg: DictConfig) -> None:
     # B x C x T x H x W
     model_predictions = model(images)
 
-    print("Condition", condition)
+    #print("Condition", condition)
 
-    print("Prediction", model_predictions)
+    #print("Prediction", model_predictions)
 
-    print("Ground truth", batches_label)
+    #print("Ground truth", batches_label)
 
     # If pro-vernier, should be reinforced toward ground truth
     # If anti-vernier, should be reinforced toward opposite of ground truth
 
-    print("Cross entropy: ", torch.nn.functional.cross_entropy(model_predictions, torch.from_numpy(batches_label).type(torch.LongTensor)))
+    #print("Cross entropy: ", torch.nn.functional.cross_entropy(model_predictions, torch.from_numpy(batches_label).type(torch.LongTensor)))
 
     softmaxed = torch.nn.functional.softmax(model_predictions, dim=1)
     softmaxed = softmaxed.detach().numpy()
@@ -82,6 +87,21 @@ def main_func(cfg: DictConfig) -> None:
 
     accuracy = sum(prediction_label == batches_label) / len(prediction_label)
 
-    print(accuracy)
+    #print(accuracy)
+
+    return accuracy
+
+  for condition in pv_conditions:
+    condition_accuracy = test_batch(condition)
+    pv_accuracy.append(condition_accuracy)
+
+  for condition in av_conditions:
+    condition_accuracy = test_batch(condition)
+    av_accuracy.append(condition_accuracy)
+
+  plt.plot(list(range(13)), pv_accuracy, 'r-', label="Pro-vernier accuracy")
+  plt.plot(list(range(13)), av_accuracy, 'b-', label="Anti-vernier accuracy")
+  plt.legend()
+  plt.show()
 
 main_func()
