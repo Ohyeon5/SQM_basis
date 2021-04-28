@@ -1,5 +1,6 @@
 # Debug files
 *.png
+*.gif
 
 # Virtual environments
 venvs/*
