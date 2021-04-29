@@ -523,17 +523,17 @@ class Conv3D_Block(nn.Module):
 def define_norm(n_channel,norm_type,n_group=None,dim_mode=2):
   # define and use different types of normalization steps 
   # Referred to https://pytorch.org/docs/stable/_modules/torch/nn/modules/normalization.html
-  if norm_type is 'bn':
+  if norm_type == 'bn':
     if dim_mode == 2:
       return nn.BatchNorm2d(n_channel)
     elif dim_mode==3:
       return nn.BatchNorm3d(n_channel)
-  elif norm_type is 'gn':
+  elif norm_type == 'gn':
     if n_group is None: n_group=2 # default group num is 2
     return nn.GroupNorm(n_group,n_channel)
-  elif norm_type is 'in':
+  elif norm_type == 'in':
     return nn.GroupNorm(n_channel,n_channel)
-  elif norm_type is 'ln':
+  elif norm_type == 'ln':
     return nn.GroupNorm(1,n_channel)
   elif norm_type is None:
     return

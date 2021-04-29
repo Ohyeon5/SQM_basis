@@ -50,9 +50,9 @@ class TrainConfig:
   train_decoder: bool = True
 
 # Include log_model=True to store checkpoints on wandb server
-wandb_logger = WandbLogger(project="lr-vernier-classification-temp", entity="davethephysicist", log_model=True, job_type='train')
+wandb_logger = WandbLogger(project="lr-vernier-classification", entity="lpsy_sqm", log_model=True, job_type='train')
 
-pl.seed_everything(42) # seed all PRNGs for reproducibility
+# pl.seed_everything(42) # seed all PRNGs for reproducibility
 
 class VernierDataModule(LightningDataModule):
   def __init__(self, data_path, batch_size, head_n=0, val_data_path = None, test_data_path=None, ds_transform=None):
@@ -114,7 +114,7 @@ def main_func(cfg: DictConfig) -> None:
     
     #TODO remove later
     cfg.head_n = 0
-    data_module = VernierDataModule(os.path.join(train_dataset, 'train_hdf52.h5'), cfg.rc.batch_size, head_n=cfg.head_n, val_data_path=os.path.join(val_dataset, 'val_hdf52.h5'), ds_transform=ToTensor())
+    data_module = VernierDataModule(os.path.join(train_dataset, 'train_hdf55.h5'), cfg.rc.batch_size, head_n=cfg.head_n, val_data_path=os.path.join(val_dataset, 'val_hdf55.h5'), ds_transform=ToTensor())
     trainer = train_model(model, data_module, cfg.rc.n_epochs)
   elif (cfg.rc.task == 'train_LR_vernier_classifier'):
     print("Training end-to-end for L/R vernier classification")

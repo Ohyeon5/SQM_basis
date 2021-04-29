@@ -18,9 +18,9 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-wandb_logger = WandbLogger(project="lr-vernier-classification-temp", entity="davethephysicist", job_type='test')
+wandb_logger = WandbLogger(project="lr-vernier-classification", entity="lpsy_sqm", job_type='test')
 
-pl.seed_everything(42) # seed all PRNGs for reproducibility
+# pl.seed_everything(42) # seed all PRNGs for reproducibility
 
 class ExperimentDataModule(LightningDataModule):
   def __init__(self, data_path, ds_transform=None):
