@@ -9,6 +9,10 @@ import wandb
 import numpy as np
 import imageio
 
+import hydra
+
+from SQM_discreteness.convlstm_SreenivasVRao import ConvLSTM
+
 class Wrapper(pl.LightningModule):
   """Wrap a convolutional module, an encoder and a decoder
 
@@ -22,12 +26,11 @@ class Wrapper(pl.LightningModule):
       The decoder module    
   """
 
-  def __init__(self, conv_module, conv_module_hparams, encoder_module, encoder_module_hparams, decoder_module, decoder_module_hparams, 
-                criterion=torch.nn.CrossEntropyLoss(), train_conv=False, train_encoder=False, train_decoder=False):
+  def __init__(self, conv_module, encoder_module, decoder_module, criterion=torch.nn.CrossEntropyLoss(), train_conv=False, train_encoder=False, train_decoder=False):
     super().__init__()
-    self.conv_module = conv_module(**conv_module_hparams)
-    self.encoder_module = encoder_module(**encoder_module_hparams)
-    self.decoder_module = decoder_module(**decoder_module_hparams)
+    self.conv_module = conv_module
+    self.encoder_module = encoder_module
+    self.decoder_module = decoder_module
 
     self.criterion = criterion
 
@@ -35,15 +38,22 @@ class Wrapper(pl.LightningModule):
     self.train_encoder = train_encoder
     self.train_decoder = train_decoder
 
-    self.save_hyperparameters('conv_module', 'conv_module_hparams', 'encoder_module', 'encoder_module_hparams',
-                              'decoder_module', 'decoder_module_hparams', 'train_conv', 'train_encoder', 'train_decoder')
+    # TODO add logging of hyperparams for the architecture
+
+    self.hparams = {'train_conv': train_conv, 'train_encoder': train_encoder, 'train_decoder': train_decoder}
 
     # Metrics
     self.train_acc = pl.metrics.Accuracy()
 
   def forward(self, x):
     x = self.conv_module(x)
-    x = self.encoder_module(x)
+    if (isinstance(self.encoder_module, ConvLSTM)):
+      # In case of continuous network, ConvLSTM returns a tuple
+      # Retrieve the last layer
+      x, _ = self.encoder_module(x)
+      x = x[-1][:,-1,:,:,:].squeeze()
+    else:
+      x = self.encoder_module(x)
     x = self.decoder_module(x)
 
     return x
@@ -105,50 +115,6 @@ class Wrapper(pl.LightningModule):
     self.train_acc(torch.nn.functional.softmax(model_predictions, dim=1), batch_labels)
     self.log('val_accuracy', self.train_acc)
 
-  # TODO add structured saving and loading
-  def save_checkpoint(self, path, save_conv = True, save_encoder = True, save_decoder = True):
-    """Save a checkpoint of the entire wrapper
-
-    Parameters
-    ----------
-    path : str
-        The path to the checkpoint file, .tar extension
-    """
-    checkpoint = {}
-
-    if save_conv:
-      checkpoint['conv_module_state_dict'] = self.conv_module.state_dict()
-    if save_encoder:
-      checkpoint['encoder_module_state_dict'] = self.encoder_module.state_dict()
-    if save_decoder:
-      checkpoint['decoder_module_state_dict'] = self.decoder_module.state_dict()
-
-    torch.save(checkpoint, path)
-
-  def load_checkpoint(self, path, load_conv = True, load_encoder = True, load_decoder = True):
-    """Load a checkpoint of the wrapper in modular fashion
-
-    Parameters
-    ----------
-    path : str
-        The path to the checkpoint file, .tar extension
-    load_conv : bool
-        Whether to load the convolutional module
-    load_encoder : bool
-        Whether to load the encoder module
-    load_decoder : bool
-        Whether to load the decoder module
-    """
-    checkpoint = torch.load(path)
-    if load_conv:
-      self.conv_module.load_state_dict(checkpoint['conv_module_state_dict'])
-    if load_encoder:
-      self.encoder_module.load_state_dict(checkpoint['encoder_module_state_dict'])
-    if load_decoder:
-      self.decoder_module.load_state_dict(checkpoint['decoder_module_state_dict'])
-
-    del checkpoint
-
   def show_conv_filter_rgb(self, conv_layer, fname, out_channel=0):
     fig, ax = plt.subplots()
 
@@ -200,10 +166,3 @@ class Wrapper(pl.LightningModule):
       self.show_conv_filter_rgb(conv_layer, "conv_out{}".format(out_channel), out_channel=out_channel)
       for in_channel in range(conv_layer.weight.shape[1]):
         self.show_conv_filter(conv_layer, "conv_in{}_out{}".format(in_channel, out_channel), in_channel=in_channel, out_channel=out_channel)
-
-def save_gif(batch_idx, n_frames, batch_frames, batch_size):
-  gif_name        = 'test_output_{}.gif'.format(batch_idx)
-  display_frames  = []
-  for t in range(n_frames):
-    display_frames.append(np.hstack([batch_frames[t][b] for b in range(batch_size)]))
-  imageio.mimwrite(gif_name, display_frames, duration=0.1)

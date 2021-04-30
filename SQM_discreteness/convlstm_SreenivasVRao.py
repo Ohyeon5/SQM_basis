@@ -9,18 +9,15 @@ HISTORY
 - 2020-09-29 (Oh-hyeon Choung) : enable num_layer == 1, thus kernal_size can be int now 
 - 2020-06-29 (Oh-hyeon Choung) : ConvLSTM._init_hidden() removed .cuda() part
 - 2020-07-10 (Oh-hyeon Choung) : Add 'device' argument in all classes 
-- 2020-11-12 (Cian David) : Modify device logic
 """
 
 import torch.nn as nn
 import torch
 
-
 class ConvLSTMCell(nn.Module):
     """
     Basic CLSTM cell.
     """
-
     def __init__(self, in_channels, hidden_channels, kernel_size, bias):
         super(ConvLSTMCell, self).__init__()
 
@@ -72,7 +69,6 @@ class ConvLSTMCell(nn.Module):
 
 
 class ConvLSTM(nn.Module):
-
     def __init__(self, in_channels, hidden_channels, kernel_size, num_layers,
                  batch_first=False, bias=True, return_all_layers=False):
         super(ConvLSTM, self).__init__()

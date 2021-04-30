@@ -2,13 +2,10 @@
 n_epochs: 100
 batch_size: 32
 training_data_path: "D:/SQM_basis/vernier_data_big.hdf5"
+train_data_artifact: 'vernier_decode_1:v0'
 task: 'train_LR_vernier_classifier'
-do_load:
-  load_conv: True
-  load_encoder: True
-  load_decoder: True
+separate_val: False
 do_train:
   train_conv: True
   train_encoder: False
   train_decoder: True
-start_model: 'phase1'

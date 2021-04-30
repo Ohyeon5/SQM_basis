@@ -1,14 +1,12 @@
 # @package _group_
 n_epochs: 100
-batch_size: 32
+batch_size: 64
 training_data_path: "D:/sqm_data/train_hdf52.h5"
+train_data_artifact: 'hand_gestures_train:v0'
 task: 'train_hand_gesture_classifier'
-do_load:
-  load_conv: False
-  load_encoder: False
-  load_decoder: False
+separate_val: True
+val_data_artifact: 'hand_gestures_val:v0'
 do_train:
   train_conv: True
   train_encoder: True
   train_decoder: True
-start_model: 'blank'

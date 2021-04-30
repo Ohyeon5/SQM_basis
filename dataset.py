@@ -31,7 +31,8 @@ class Neil():
 
     if random_size:
       self.sizx  = rng().uniform(wn_w/10, wn_w/2, (1, batch_s))  # max: /4
-      self.sizy  = rng().uniform(wn_w/10, wn_w/2, (1, batch_s))  # max: /4
+      #self.sizy  = rng().uniform(wn_w/10, min(wn_w/2, wn_w - y), (1, batch_s))  # max: /4
+      self.sizy  = rng().uniform(wn_w/10, wn_w/2, (1, batch_s))
     else:
       self.sizx  = np.ones((1, batch_s))*wn_w/5
       self.sizy  = np.ones((1, batch_s))*wn_w/4
@@ -169,6 +170,7 @@ class BatchMaker():
     self.gravity    = 0.0
     self.friction   = 0.0
 
+    # Precedence is random_start_pos then random_size
     self.random_start_pos = random_start_pos
     self.random_size = random_size
   
@@ -240,7 +242,7 @@ if __name__ == '__main__':
   scale        = 1
   batch_s      = 4 # number of video sequences to generate simultaneously
   n_channels   = 1 # number of channels of video sequences
-  batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, n_channels), condition)
+  batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, n_channels), condition, random_start_pos=True, random_size=True)
   if set_type == 'recons':
     batch_frames = batch_maker.generate_batch()
   else:

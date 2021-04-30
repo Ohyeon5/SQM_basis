@@ -4,14 +4,16 @@ conv_module:
   norm_type: bn
   conv_n_feats: [3, 32, 64]
 encoder_module:
-  _target_: SQM_discreteness.models.EncoderHigh
-  window: 4
-  conv_n_feats: [3, 32, 64]
-  disc_type: simple
+  _target_: SQM_discreteness.models.ConvLSTM_block
+  in_channels: 64
+  hidden_channels: [128, 256]
+  #kernel_size: [3, 3]
+  #num_layers: 2
+  return_all_layers: True
 decoder_module:
   _target_: SQM_discreteness.models.FF_classifier
   in_channels: 256
   n_classes: 2
-  hidden_channels: 2048
+  hidden_channels: 512
 
-arch_id: Net_disc_high
+arch_id: Net_continuous
