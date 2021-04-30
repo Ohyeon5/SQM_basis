@@ -2,4 +2,11 @@ defaults:
   - model: net_disc_high
   - rc: phase2
 
-head_n: 512
+load_model: False
+model_artifact: 'model_train_hand_gesture_classifier:latest'
+head_n: 2048
+
+# model artifact names:
+# Net_disc_low
+# Net_disc_high
+# Continuous

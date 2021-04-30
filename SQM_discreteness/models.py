@@ -7,98 +7,43 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from SQM_discreteness.convlstm_SreenivasVRao import *
+from SQM_discreteness.convlstm_SreenivasVRao import ConvLSTM
 
-import pytorch_lightning as pl
-
-###############
-#   Networks  #
-###############
-
-# Discrete network: High level 
-class Net_disc_high(pl.LightningModule):
-  '''
-  High level discrete network with 'simple' or 'redundant' secondary convLSTM 
-  Input images are processed continuously in the primary convlstm 
-  and then outputs from every window frame are fed to secondary convlstm
-  '''
-
-  def __init__(self, n_classes, window, disc_type='simple', n_convBlocks=2, norm_type='bn', conv_n_feats=[3, 32, 64], 
-         clstm_hidden=[128, 256], return_all_layers=True,
-         fc_n_hidden=None, criterion=torch.nn.CrossEntropyLoss()):
-    super(Net_disc_high, self).__init__()
-
-    # initial parameter settings
-    self.disc_type    = disc_type  # 'simple' or 'redundant' is available in the moment
-    self.n_classes    = n_classes
-    self.window       = window
-    self.conv_n_feats = conv_n_feats
-    self.clstm_hidden = clstm_hidden
-    if fc_n_hidden is None:
-      self.fc_n_hidden = n_classes*5
-    else: 
-      self.fc_n_hidden = fc_n_hidden
-
-    # primary convolution blocks for preprocessing and feature extraction
-    self.primary_conv3D = Primary_conv3D(norm_type=norm_type, conv_n_feats=self.conv_n_feats)
+class DiscreteEncoder(nn.Module):
+  def __init__(self, window, conv_n_feats, n_convBlocks=2, clstm_hidden=[128, 256], return_all_layers=True, disc_type='simple'):
+    super().__init__()
+    self.disc_type = disc_type
+    self.window = window
 
     # Two layers of convLSTM
-    self.primary_convlstm   = ConvLSTM_block(in_channels=self.conv_n_feats[n_convBlocks],hidden_channels=self.clstm_hidden[0], 
-                         return_all_layers=True)
-    self.secondary_convlstm = ConvLSTM_block(in_channels=self.clstm_hidden[0],hidden_channels=self.clstm_hidden[1], 
-                         return_all_layers=return_all_layers)
-    self.ff_classifier      = FF_classifier(in_channels=self.clstm_hidden[-1], n_classes=self.n_classes, 
-                        hidden_channels=self.fc_n_hidden, norm_type=norm_type)
-    
-    self.criterion = criterion
-
-    # Metrics
-    self.train_acc = pl.metrics.Accuracy()
+    self.primary_convlstm   = ConvLSTM_block(in_channels=conv_n_feats[n_convBlocks], hidden_channels=clstm_hidden[0], return_all_layers=True)
+    self.secondary_convlstm = ConvLSTM_block(in_channels=clstm_hidden[0], hidden_channels=clstm_hidden[1], return_all_layers=return_all_layers)
 
   def forward(self, x):
-    if self.disc_type is 'simple':
+    # x is a list of images
+    if self.disc_type == 'simple':
       return self.forward_simple(x)
-    elif self.disc_type is 'redundant':
+    elif self.disc_type == 'redundant':
       return self.forward_redundant(x)
 
-  def configure_optimizers(self):
-    optimizer = torch.optim.Adam(self.parameters())
+class EncoderHigh(DiscreteEncoder):
+  def __init__(self, window, conv_n_feats, n_convBlocks=2, clstm_hidden=[128, 256], return_all_layers=True, disc_type='simple'):
+    super().__init__(window, conv_n_feats, n_convBlocks=n_convBlocks, clstm_hidden=clstm_hidden, return_all_layers=return_all_layers, disc_type=disc_type)
 
-    return optimizer
+  def forward_simple(self, x):
+    x = self.primary_convlstm(x)
 
-  def training_step(self, batch, batch_idx):
-    batch_labels = batch['label_id']
-    # Stack images
-    images = torch.stack(batch['images'], 2) # B x C x T x H x W
-    # Compute the model outputs
-    model_predictions = self.forward(images)
-    # Compute the loss
-    loss = self.criterion(model_predictions, batch_labels)
-    
-    self.log('loss', loss.item())
-    # Log accuracy
-    self.train_acc(torch.nn.functional.softmax(model_predictions, dim=1), batch_labels)
-    self.log('accuracy', self.train_acc)
+    # discrete step: high level - simple - every window frame
+    img = x[0][:, slice(self.window-1, None, self.window), :, :, :]
 
-    return loss
+    img = self.secondary_convlstm(img)    # img: 5D tensor => B x T x Filters x H x W
 
-  def validation_step(self, batch, batch_idx):
-    batch_labels = batch['label_id']
-    # Stack images
-    images = torch.stack(batch['images'], 2) # B x C x T x H x W
-    # Compute the model outputs
-    model_predictions = self.forward(images)
-    # Compute the loss
-    loss = self.criterion(model_predictions, batch_labels)
+    # Base Network: use the last layer only
+    img = img[-1][:,-1,:,:,:].squeeze()
 
-    self.log('val_loss', loss.item())
-    # Log accuracy
-    self.train_acc(torch.nn.functional.softmax(model_predictions, dim=1), batch_labels)
-    self.log('val_accuracy', self.train_acc)
+    return img
 
-  def forward_redundant(self,x):
-    # arg: x is a list of images
-    x = self.primary_conv3D(x)  # Primary feature extraction: list x -> B x C x T x H x W transposed to -> B x T x C x H x W
+  def forward_redundant(self, x):
     x = self.primary_convlstm(x)
 
     # discrete step: high level - redundant - repeat the output of nth frame to have same T
@@ -112,72 +57,14 @@ class Net_disc_high(pl.LightningModule):
 
     # Base Network: use the last layer only
     img = img[-1][:,-1,:,:,:].squeeze()
-    img = self.ff_classifier(img)
 
     return img
 
-  def forward_simple(self,x):
-    # arg: x is a list of images
-    x = self.primary_conv3D(x)  # Primary feature extraction: list x -> B x C x T x H x W transposed to -> B x T x C x H x W
-    x = self.primary_convlstm(x)
+class EncoderLow(DiscreteEncoder):
+  def __init__(self, window, conv_n_feats, n_convBlocks=2, clstm_hidden=[128, 256], return_all_layers=True, disc_type='simple'):
+    super().__init__(window, conv_n_feats, n_convBlocks=n_convBlocks, clstm_hidden=clstm_hidden, return_all_layers=return_all_layers, disc_type=disc_type)
 
-    # discrete step: high level - simple - every window frame
-    img = x[0][:,slice(self.window-1,None,self.window),:,:,:]
-
-    img = self.secondary_convlstm(img)    # img: 5D tensor => B x T x Filters x H x W
-
-    # Base Network: use the last layer only
-    img = img[-1][:,-1,:,:,:].squeeze()
-    img = self.ff_classifier(img)
-
-    return img
-
-# Discrete network: Low level - simple
-class Net_disc_low(nn.Module):
-
-  '''
-  Low level discrete network with 'simple' or 'redundant' secondary convLSTM 
-  Input images are divided every 'window' frames and are processed in individual primary_convlstm 
-  and only the last output from each window are stacked and fed to secondary convlstm
-  '''
-
-  def __init__(self, n_classes, window, disc_type='simple', n_convBlocks=2, norm_type='bn', conv_n_feats=[3, 32, 64], 
-         clstm_hidden=[128, 256], return_all_layers=True,
-         fc_n_hidden=None):
-    super(Net_disc_low, self).__init__()
-
-    # initial parameter settings
-    self.disc_type    = disc_type  # 'simple' or 'redundant' is available in the moment
-    self.n_classes    = n_classes
-    self.window       = window
-    self.conv_n_feats = conv_n_feats
-    self.clstm_hidden = clstm_hidden
-    if fc_n_hidden is None:
-      self.fc_n_hidden = n_classes*5
-    else: 
-      self.fc_n_hidden = fc_n_hidden
-
-    # primary convolution blocks for preprocessing and feature extraction
-    self.primary_conv3D = Primary_conv3D(norm_type=norm_type, conv_n_feats=self.conv_n_feats)
-
-    # Two layers of convLSTM
-    self.primary_convlstm   = ConvLSTM_block(in_channels=self.conv_n_feats[n_convBlocks],hidden_channels=self.clstm_hidden[0], 
-                         return_all_layers=True)
-    self.secondary_convlstm = ConvLSTM_block(in_channels=self.clstm_hidden[0],hidden_channels=self.clstm_hidden[1], 
-                         return_all_layers=return_all_layers)
-    self.ff_classifier      = FF_classifier(in_channels=self.clstm_hidden[-1], n_classes=self.n_classes, 
-                        hidden_channels=self.fc_n_hidden, norm_type=norm_type)
-
-  def forward(self,x):
-    if self.disc_type is 'simple':
-      return self.forward_simple(x)
-    elif self.disc_type is 'redundant':
-      return self.forward_redundant(x)
-
-  def forward_redundant(self,x):
-    # arg: x is a list of images
-    x = self.primary_conv3D(x)  # Primary feature extraction: list x -> B x C x T x H x W transposed to -> B x T x C x H x W
-    
+  def forward_redundant(self,x): 
     # discrete step: input is fed every window frames individually, and only the last output of the primary convlstm is saved
     imgs = []
     for t in range(0, x.shape[1], self.window):
@@ -190,14 +77,10 @@ class Net_disc_low(nn.Module):
 
     # Base Network: use the last layer only
     img = img[-1][:,-1,:,:,:].squeeze()
-    img = self.ff_classifier(img)
 
     return img
 
-  def forward_simple(self,x):
-    # arg: x is a list of images
-    x = self.primary_conv3D(x)  # Primary feature extraction: list x -> B x C x T x H x W transposed to -> B x T x C x H x W
-    
+  def forward_simple(self, x):  
     # discrete step: input is fed every window frames individually, and only the last output of the primary convlstm is saved
     imgs = []
     for t in range(0, x.shape[1], self.window):
@@ -210,67 +93,15 @@ class Net_disc_low(nn.Module):
 
     # Base Network: use the last layer only
     img = img[-1][:,-1,:,:,:].squeeze()
-    img = self.ff_classifier(img)
 
     return img
-
-
-# Baseline network (continuous)
-class Net_continuous(nn.Module):
-
-  def __init__(self, n_classes, n_convBlocks=2, norm_type='bn', conv_n_feats=[3, 32, 64], 
-         clstm_hidden=[128, 256], return_all_layers=True,
-         fc_n_hidden=None):
-    super(Net_continuous, self).__init__()
-
-    # initial parameter settings
-    self.conv_n_feats = conv_n_feats
-    self.clstm_hidden = clstm_hidden
-    self.n_classes    = n_classes
-    if fc_n_hidden is None:
-      self.fc_n_hidden = n_classes*5
-    else: 
-      self.fc_n_hidden = fc_n_hidden
-
-    # primary convolution blocks for preprocessing and feature extraction
-    self.primary_conv3D = Primary_conv3D(norm_type=norm_type,conv_n_feats=self.conv_n_feats)
-
-    # Two layers of convLSTM
-    self.convlstm   = ConvLSTM(in_channels=self.conv_n_feats[n_convBlocks], 
-                             hidden_channels=self.clstm_hidden, kernel_size=(3,3),
-                   num_layers=2, batch_first=True, 
-                   bias=True, return_all_layers=return_all_layers)
-    
-    self.ff_classifier      = FF_classifier(in_channels=self.clstm_hidden[-1], n_classes=self.n_classes, 
-                        hidden_channels=self.fc_n_hidden, norm_type=norm_type)
-
-  def forward(self,x):
-    # arg: x is a list of images
-
-    img = self.primary_conv3D(x)  # Primary feature extraction: list x -> B x C x T x H x W transposed to -> B x T x C x H x W
-    # img = self.primary_convlstm(img)    # img: 5D tensor => B x T x Filters x H x W
-    # img = self.secondary_convlstm(img[0])    # img: 5D tensor => B x T x Filters x H x W
-    img,_ = self.convlstm(img)
-
-    # Base Network: use the last layer only
-    img = img[0][:,-1,:,:,:].squeeze()
-    # print(img.mean())
-    img = self.ff_classifier(img)
-    # print(img.mean())
-
-    return img
-
-
-###########################
-# Network Building Blocks #
-###########################
 
 # 1) Primary feature extraction conv layer
-class Primary_conv3D(pl.LightningModule):
+class Primary_conv3D(nn.Module):
   '''
   Primary feedforward feature extraction convolution layers 
   '''
-  def __init__(self, norm_type='bn',conv_n_feats=[3, 32, 64]):
+  def __init__(self, norm_type='bn', conv_n_feats=[3, 32, 64]):
     super().__init__()
 
     # initial parameter settings
@@ -294,12 +125,13 @@ class Primary_conv3D(pl.LightningModule):
 
 # 2) Primary and Secondary convLSTMs
 class ConvLSTM_block(nn.Module):
-  '''
-  ConvLSTM blocks 
-  '''
+  """Wrap a ConvLSTM for convenience.
+  """
   def __init__(self, in_channels, hidden_channels, kernel_size=(3,3), num_layers=1, return_all_layers=True):
     super(ConvLSTM_block, self).__init__()
 
+    # TODO remove once you've cleaned up the config
+    #kernel_size = tuple(kernel_size)
 
     self.convlstm_block   = ConvLSTM(in_channels=in_channels, hidden_channels=hidden_channels, 
                        kernel_size=kernel_size, num_layers=num_layers, bias=True, 
@@ -307,143 +139,8 @@ class ConvLSTM_block(nn.Module):
 
   def forward(self, x):  
     # arg: x is a 5D tensor => B x T x Filters x H x W
-    # print("Profile GPU in forward of convlstm block")
-    # profile_gpu()
     x, _ = self.convlstm_block(x) 
     return x
-
-# 2-1) wrapper compatible: low discrete network 
-class ConvLSTM_disc_low(nn.Module):
-
-  '''
-  Low level discrete network with 'simple' or 'redundant' secondary convLSTM 
-  Input images are divided every 'window' frames and are processed in individual primary_convlstm 
-  and only the last output from each window are stacked and fed to secondary convlstm
-  '''
-
-  def __init__(self, window, disc_type='simple',
-             clstm_hidden=[64, 128, 256], return_all_layers=False):
-    super(ConvLSTM_disc_low, self).__init__()
-
-    # initial parameter settings
-    self.disc_type    = disc_type  # 'simple' or 'redundant' is available in the moment
-    self.window       = window
-    self.clstm_hidden = clstm_hidden
-
-    # Two layers of convLSTM
-    self.primary_convlstm   = ConvLSTM_block(in_channels=self.clstm_hidden[0],hidden_channels=self.clstm_hidden[1], 
-                         return_all_layers=False)
-    self.secondary_convlstm = ConvLSTM_block(in_channels=self.clstm_hidden[1],hidden_channels=self.clstm_hidden[2], 
-                         return_all_layers=return_all_layers)
-
-  def forward(self,x):
-    if self.disc_type is 'simple':
-      return self.forward_simple(x)
-    elif self.disc_type is 'redundant':
-      return self.forward_redundant(x)
-
-  def forward_redundant(self,x):
-    # arg: x is a 5D tensor B x T x C x H x W
-    
-    # discrete step: input is fed every window frames individually, and only the last output of the primary convlstm is saved
-    imgs = []
-    for t in range(0, x.shape[1], self.window):
-      ind_end = t+self.window if t+self.window<x.shape[1] else None
-      mm = self.primary_convlstm(x[:,t:ind_end,:,:,:]) # mm: 5D tensor => B x T x Filters x H x W
-      imgs.append(mm[0][:,-1,:,:,:].unsqueeze(1).repeat(1,min(self.window,x.shape[1]-t),1,1,1))
-    img = torch.cat(imgs,1) # stacked img: 5D tensor => B x T x C x H x W
-
-    img = self.secondary_convlstm(img)    # img: 5D tensor => B x T x Filters x H x W
-
-    # Base Network: use the last layer only
-    img = img[-1][:,-1,:,:,:].squeeze()
-
-    return img
-
-  def forward_simple(self,x):
-    # arg: x is a 5D tensor B x T x C x H x W
-    
-    # discrete step: input is fed every window frames individually, and only the last output of the primary convlstm is saved
-    imgs = []
-    for t in range(0, x.shape[1], self.window):
-      ind_end = t+self.window if t+self.window<x.shape[1] else None
-      mm = self.primary_convlstm(x[:,t:ind_end,:,:,:]) # mm: 5D tensor => B x T x Filters x H x W
-      imgs.append(mm[0][:,-1,:,:,:])
-    img = torch.stack(imgs,1) # stacked img: 5D tensor => B x T x C x H x W
-    
-    img = self.secondary_convlstm(img)    # img: 5D tensor => B x T x Filters x H x W  
-
-    # print("Shape of secondary convlstm output: len {}, shape {}".format(len(img), img[0].shape))
-
-    # Base Network: use the last layer only
-    img = img[-1][:,-1,:,:,:].squeeze(1)
-
-    # print("Shape of convlstm output: {}".format(img.shape))
-
-    return img
-
-# 2-1) wrapper compatible: high discrete network 
-class ConvLSTM_disc_high(nn.Module):
-
-  '''
-  High level discrete network with 'simple' or 'redundant' secondary convLSTM 
-  Input images are processed continuously in the primary convlstm 
-  and then outputs from every window frame are fed to secondary convlstm
-  '''
-
-  def __init__(self, window, disc_type='simple', 
-         clstm_hidden=[64, 128, 256], return_all_layers=False):
-    super(ConvLSTM_disc_high, self).__init__()
-
-    # initial parameter settings
-    self.disc_type    = disc_type  # 'simple' or 'redundant' is available in the moment
-    self.window       = window
-    self.clstm_hidden = clstm_hidden
-    
-    # Two layers of convLSTM
-    self.primary_convlstm   = ConvLSTM_block(in_channels=self.clstm_hidden[0],hidden_channels=self.clstm_hidden[1], 
-                         return_all_layers=False)
-    self.secondary_convlstm = ConvLSTM_block(in_channels=self.clstm_hidden[1],hidden_channels=self.clstm_hidden[2], 
-                         return_all_layers=return_all_layers)
-    
-  def forward(self,x):
-    if self.disc_type is 'simple':
-      return self.forward_simple(x)
-    elif self.disc_type is 'redundant':
-      return self.forward_redundant(x)
-
-  def forward_redundant(self,x):
-    # arg: x is a 5D tensor B x T x C x H x W
-    x = self.primary_convlstm(x)
-
-    # discrete step: high level - redundant - repeat the output of nth frame to have same T
-    imgs = []
-    for t in range(0, x[-1].shape[1], self.window):
-      mm = x[0][:,t,:,:,:].unsqueeze(1).repeat(1,min(self.window, x[-1].shape[1]-t),1,1,1)
-      imgs.append(mm)
-    img = torch.cat(imgs,1)
-
-    img = self.secondary_convlstm(img)    # img: 5D tensor => B x T x Filters x H x W
-
-    # Base Network: use the last layer only
-    img = img[-1][:,-1,:,:,:].squeeze()
-
-    return img
-
-  def forward_simple(self,x):
-    # arg: x is a 5D tensor B x T x C x H x W
-    x = self.primary_convlstm(x)
-
-    # discrete step: high level - simple - every window frame
-    img = x[0][:,slice(self.window-1,None,self.window),:,:,:]
-
-    img = self.secondary_convlstm(img)    # img: 5D tensor => B x T x Filters x H x W
-
-    # Base Network: use the last layer only
-    img = img[-1][:,-1,:,:,:].squeeze()
-
-    return img
-
 
 # 3) Feedforward classifier
 class FF_classifier(nn.Module):
@@ -459,9 +156,11 @@ class FF_classifier(nn.Module):
       self.hidden_channels = hidden_channels
 
     avg_pool_size = (4, 4) # tunable
+    self.avg_pool_size = avg_pool_size
+    self.in_channels = in_channels
 
     self.avgpool    = nn.AdaptiveAvgPool2d(avg_pool_size)
-    self.norm_layer = define_norm(in_channels,norm_type,dim_mode=2)
+    self.norm_layer = define_norm(in_channels, norm_type, dim_mode=2)
     self.classifier = nn.Sequential(
       nn.Dropout(),
       nn.Linear(avg_pool_size[0]*avg_pool_size[1]*in_channels, hidden_channels),
@@ -472,7 +171,6 @@ class FF_classifier(nn.Module):
 
   def forward(self, x):  
     # arg: x is a 4D tensor B x C x H x W
-
     x = self.avgpool(x)
     if self.norm_layer is not None:
       x = self.norm_layer(x)
@@ -481,7 +179,6 @@ class FF_classifier(nn.Module):
     x = self.classifier(x)
 
     return x    
-
 
 # Conv3D block 
 class Conv3D_Block(nn.Module):
@@ -513,29 +210,27 @@ class Conv3D_Block(nn.Module):
 
     return x
 
-
-
 ##################
 #  Aid functions #
 ################## 
 
 # Define normalization type
-def define_norm(n_channel,norm_type,n_group=None,dim_mode=2):
+def define_norm(n_channel, norm_type, n_group=None, dim_mode=2):
   # define and use different types of normalization steps 
   # Referred to https://pytorch.org/docs/stable/_modules/torch/nn/modules/normalization.html
-  if norm_type is 'bn':
+  if norm_type == 'bn':
     if dim_mode == 2:
       return nn.BatchNorm2d(n_channel)
     elif dim_mode==3:
       return nn.BatchNorm3d(n_channel)
-  elif norm_type is 'gn':
+  elif norm_type == 'gn':
     if n_group is None: n_group=2 # default group num is 2
     return nn.GroupNorm(n_group,n_channel)
-  elif norm_type is 'in':
+  elif norm_type == 'in':
     return nn.GroupNorm(n_channel,n_channel)
-  elif norm_type is 'ln':
+  elif norm_type == 'ln':
     return nn.GroupNorm(1,n_channel)
-  elif norm_type is None:
+  elif norm_type == None:
     return
   else:
     return ValueError('Normalization type - '+norm_type+' is not defined yet')

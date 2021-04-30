@@ -58,8 +58,8 @@ def main_func(cfg: DictConfig) -> None:
   av_accuracy = []
 
   def test_batch(condition):
-    batch_size = 2
-    batch_maker = BatchMaker('sqm', 1, batch_size, 13, (64, 64, 3), condition, random_start_pos=False, random_size=False)
+    batch_size = 4
+    batch_maker = BatchMaker('sqm', 1, batch_size, 13, (64, 64, 3), condition, random_start_pos=True, random_size=True)
 
     batches_frames, batches_label = batch_maker.generate_batch()
 
