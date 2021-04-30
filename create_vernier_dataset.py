@@ -33,8 +33,9 @@ def main_func(cfg: DictConfig) -> None:
     print("Writing batches to file")
 
     for batch_idx in tqdm(range(cfg.n_sequences)):
-      # Change from channels_last to channels_first
+      # Change from channels_last to channels_first -> TODO remove for future datasets since ToTensor already performs this
       batch_frames = [np.moveaxis(batch_frame[batch_idx], -1, 0).astype('float32') for batch_frame in batches_frames]
+      print(batch_frames[0].shape)
       batch_label = batches_label[batch_idx]
 
       #print("Batch frame 0", batch_frames[0].shape)
@@ -43,6 +44,7 @@ def main_func(cfg: DictConfig) -> None:
       group = hdf_file.create_group("vernier_{}".format(batch_idx))
 
       group.create_dataset('images', data=batch_frames)
+
       group.create_dataset('label', data='placeholder') # TODO sort this out
       group.create_dataset('label_id', data=batch_label.astype('int64'))
   

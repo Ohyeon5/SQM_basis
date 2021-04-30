@@ -6,7 +6,6 @@ from math import ceil, sqrt
 
 import matplotlib.pyplot as plt
 
-
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
@@ -163,6 +162,8 @@ class Normalize(object):
 
 class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
+    def __init__(self, is_channels_last=True):
+      self.is_channels_last = is_channels_last
 
     def __call__(self, sample):
         images, label, label_id = sample['images'], sample['label'], sample['label_id']
@@ -176,7 +177,8 @@ class ToTensor(object):
             # swap color axis because
             # numpy image: H x W x C
             # torch image: C X H X W
-            image = image.transpose((2, 0, 1))
+            if self.is_channels_last:
+              image = image.transpose((2, 0, 1))
             images[ii] = torch.from_numpy(image).float()
         
         return {'images': images, 'label': label,

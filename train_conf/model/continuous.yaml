@@ -4,7 +4,7 @@ conv_module:
   norm_type: bn
   conv_n_feats: [3, 32, 64]
 encoder_module:
-  _target_: SQM_discreteness.models.ConvLSTM_block
+  _target_: SQM_discreteness.models.ConvLSTM
   in_channels: 64
   hidden_channels: [128, 256]
   #kernel_size: [3, 3]
