@@ -4,6 +4,8 @@ from SQM_discreteness.hdf5_loader import HDF5Dataset
 
 from torch.utils.data import DataLoader, IterableDataset, random_split
 
+import h5py
+
 class VernierDataModule(LightningDataModule):
   def __init__(self, data_path, batch_size, head_n=0, val_data_path=None, test_data_path=None, ds_transform=None):
     super().__init__()

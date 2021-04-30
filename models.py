@@ -25,12 +25,15 @@ class Wrapper(pl.LightningModule):
   decoder_module : torch.nn.Module
       The decoder module    
   """
-
-  def __init__(self, conv_module, encoder_module, decoder_module, criterion=torch.nn.CrossEntropyLoss(), train_conv=False, train_encoder=False, train_decoder=False):
+  def __init__(self, conv_module_cfg, encoder_module_cfg, decoder_module_cfg, criterion=torch.nn.CrossEntropyLoss(), train_conv=False, train_encoder=False, train_decoder=False):
     super().__init__()
-    self.conv_module = conv_module
-    self.encoder_module = encoder_module
-    self.decoder_module = decoder_module
+    self.conv_module = hydra.utils.instantiate(conv_module_cfg)
+    # Find way to fix this, need to specify kernel size (tuple) in config
+    if encoder_module_cfg._target_ == 'SQM_discreteness.models.ConvLSTM':
+      self.encoder_module = ConvLSTM(in_channels=64, hidden_channels=[128, 256], kernel_size=(3,3), num_layers=2, batch_first=True, return_all_layers=True)
+    else:
+      self.encoder_module = hydra.utils.instantiate(encoder_module_cfg)
+    self.decoder_module = hydra.utils.instantiate(decoder_module_cfg)
 
     self.criterion = criterion
 
@@ -38,9 +41,7 @@ class Wrapper(pl.LightningModule):
     self.train_encoder = train_encoder
     self.train_decoder = train_decoder
 
-    # TODO add logging of hyperparams for the architecture
-
-    self.hparams = {'train_conv': train_conv, 'train_encoder': train_encoder, 'train_decoder': train_decoder}
+    self.save_hyperparameters()
 
     # Metrics
     self.train_acc = pl.metrics.Accuracy()

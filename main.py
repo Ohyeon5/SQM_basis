@@ -62,8 +62,8 @@ def train_model(model, data_module, n_epochs):
 
   trainer.fit(model, data_module)
 
-  input_sample = torch.randn((1, 3, 2, 64, 64))
-  model.to_onnx("portable_model.onnx", input_sample)
+  #input_sample = torch.randn((1, 3, 2, 64, 64))
+  #model.to_onnx("portable_model.onnx", input_sample)
 
   return trainer
 
@@ -71,7 +71,7 @@ def train_model(model, data_module, n_epochs):
 def main_func(cfg: DictConfig) -> None:
   #print(OmegaConf.to_yaml(cfg, resolve=True))
 
-  print("Task:", cfg.rc.task)
+  print("Training model {} on task {} for maximum {} epochs".format(cfg.model.arch_id, cfg.rc.task, cfg.rc.n_epochs))
 
   wandb_logger.experiment.config.update({"num_epochs": cfg.rc.n_epochs, "batch_size": cfg.rc.batch_size})
 
@@ -84,32 +84,28 @@ def main_func(cfg: DictConfig) -> None:
   if cfg.rc.separate_val:
     val_data_artifact = wandb_logger.experiment.use_artifact(cfg.rc.val_data_artifact)
     val_dataset = val_data_artifact.download()
+    data_module = VernierDataModule(os.path.join(train_dataset, cfg.rc.train_data_filename), cfg.rc.batch_size, head_n=cfg.head_n,
+      val_data_path=os.path.join(val_dataset, cfg.rc.val_data_filename), ds_transform=ToTensor(cfg.rc.is_channels_last))
+  else:
+    data_module = VernierDataModule(os.path.join(train_dataset, cfg.rc.train_data_filename), cfg.rc.batch_size, head_n=cfg.head_n, ds_transform=ToTensor(cfg.rc.is_channels_last))
 
-  data_module = VernierDataModule(os.path.join(train_dataset, 'train_hdf52.h5'), cfg.rc.batch_size, head_n=cfg.head_n, val_data_path=os.path.join(val_dataset, 'val_hdf52.h5'), ds_transform=ToTensor())
+  do_train = cfg.rc.do_train
 
   if cfg.load_model:
     print("Loading model", cfg.model_artifact)
     prev_model_artifact = wandb_logger.experiment.use_artifact(cfg.model_artifact)
     prev_model_path = prev_model_artifact.download()
-    prev_model = Wrapper.load_from_checkpoint(os.path.join(prev_model_path, 'final_model.ckpt'))
+    model = Wrapper.load_from_checkpoint(os.path.join(prev_model_path, cfg.model_filename),
+      train_conv=do_train.train_conv, train_encoder=do_train.train_encoder, train_decoder=do_train.train_decoder)
   else:
-    model = instantiate_model_from_config(cfg.model, cfg.rc.do_train)
+    model = Wrapper(cfg.model.conv_module, cfg.model.encoder_module, cfg.model.decoder_module,
+      train_conv=do_train.train_conv, train_encoder=do_train.train_encoder, train_decoder=do_train.train_decoder)
 
   trainer = train_model(model, data_module, cfg.rc.n_epochs)  
 
-  trainer.save_checkpoint("final_model.ckpt")
-  model_artifact.add_file("final_model.ckpt")
+  trainer.save_checkpoint(cfg.model_filename)
+  model_artifact.add_file(cfg.model_filename)
 
   wandb_logger.experiment.log_artifact(model_artifact)
-
-def instantiate_model_from_config(model_cfg, do_train):
-  conv_module = hydra.utils.instantiate(model_cfg.conv_module)
-  encoder_module = hydra.utils.instantiate(model_cfg.encoder_module)
-  #encoder_module = ConvLSTM(in_channels=64, hidden_channels=[128, 256], kernel_size=(3,3), num_layers=2, batch_first=True, return_all_layers=True)
-  decoder_module = hydra.utils.instantiate(model_cfg.decoder_module)
-
-  model = Wrapper(conv_module, encoder_module, decoder_module, train_conv=do_train.train_conv, train_encoder=do_train.train_encoder, train_decoder=do_train.train_decoder)
-
-  return model
 
 main_func()

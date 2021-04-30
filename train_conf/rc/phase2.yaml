@@ -1,8 +1,9 @@
 # @package _group_
-n_epochs: 100
+n_epochs: 32
 batch_size: 32
-training_data_path: "D:/SQM_basis/vernier_data_big.hdf5"
-train_data_artifact: 'vernier_decode_1:v0'
+train_data_artifact: 'left_right_vernier:latest'
+train_data_filename: 'vernier_decode.hdf5'
+is_channels_last: False
 task: 'train_LR_vernier_classifier'
 separate_val: False
 do_train:

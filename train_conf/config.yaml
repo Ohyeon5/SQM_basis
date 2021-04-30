@@ -1,9 +1,10 @@
 defaults:
-  - model: net_disc_high
+  - model: net_disc_low
   - rc: phase2
 
 load_model: False
-model_artifact: 'model_train_hand_gesture_classifier:latest'
+model_artifact: 'model_Net_disc_low_train_hand_gesture_classifier:latest'
+model_filename: 'final_model.ckpt'
 head_n: 2048
 
 # model artifact names:

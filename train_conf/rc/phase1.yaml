@@ -1,11 +1,13 @@
 # @package _group_
-n_epochs: 100
+n_epochs: 32
 batch_size: 64
-training_data_path: "D:/sqm_data/train_hdf52.h5"
-train_data_artifact: 'hand_gestures_train:v0'
+train_data_artifact: 'hand_gestures_train_2:latest'
+train_data_filename: 'train_hdf52.h5'
+is_channels_last: True
 task: 'train_hand_gesture_classifier'
 separate_val: True
-val_data_artifact: 'hand_gestures_val:v0'
+val_data_artifact: 'hand_gestures_val_2:latest'
+val_data_filename: 'val_hdf52.h5'
 do_train:
   train_conv: True
   train_encoder: True
