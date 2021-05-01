@@ -18,7 +18,9 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-wandb_logger = WandbLogger(project="lr-vernier-classification-temp", entity="davethephysicist", job_type='test')
+import wandb
+
+wandb_logger = WandbLogger(project="lr-vernier-classification", entity="lpsy_sqm", job_type='test')
 
 pl.seed_everything(42) # seed all PRNGs for reproducibility
 
@@ -34,11 +36,10 @@ class ExperimentDataModule(LightningDataModule):
 
 @hydra.main(config_path='test_conf', config_name='config')
 def main_func(cfg: DictConfig) -> None:
-  print("Testing model")
+  print("Testing model {}".format(cfg.model_artifact))
 
-  model_artifact = wandb_logger.experiment.use_artifact('model_train_LR_vernier_classifier:latest')
+  model_artifact = wandb_logger.experiment.use_artifact(cfg.model_artifact)
   model_path = model_artifact.download()
-  print("Download done!")
 
   #dataset_artifact = wandb_logger.experiment.use_artifact('videos_sqm_V-AV3:v0')
   #dataset_path = dataset_artifact.download()
@@ -48,18 +49,20 @@ def main_func(cfg: DictConfig) -> None:
 
   #data_module = ExperimentDataModule(os.path.join(dataset_path, 'video_data.hdf5'))
 
-  model = Wrapper.load_from_checkpoint(os.path.join(model_path, 'final_model.ckpt'))
+  model = Wrapper.load_from_checkpoint(os.path.join(model_path, cfg.model_filename))
 
-  pv_conditions = ['V-PV{}'.format(n) for n in range(13)]
-  av_conditions = ['V-AV{}'.format(n) for n in range(13)]
+  pv_conditions = ['V-PV{}'.format(n) for n in range(1, 13)]
+  av_conditions = ['V-AV{}'.format(n) for n in range(1, 13)]
   conditions = pv_conditions + av_conditions
 
   pv_accuracy = []
   av_accuracy = []
+  pv_cross_entropy = []
+  av_cross_entropy = []
 
   def test_batch(condition):
-    batch_size = 4
-    batch_maker = BatchMaker('sqm', 1, batch_size, 13, (64, 64, 3), condition, random_start_pos=True, random_size=True)
+    batch_size = cfg.batch_size
+    batch_maker = BatchMaker('sqm', 1, batch_size, 13, (64, 64, 3), condition, random_start_pos=cfg.random_start_pos, random_size=cfg.random_size)
 
     batches_frames, batches_label = batch_maker.generate_batch()
 
@@ -70,16 +73,8 @@ def main_func(cfg: DictConfig) -> None:
     # B x C x T x H x W
     model_predictions = model(images)
 
-    #print("Condition", condition)
-
-    #print("Prediction", model_predictions)
-
-    #print("Ground truth", batches_label)
-
     # If pro-vernier, should be reinforced toward ground truth
     # If anti-vernier, should be reinforced toward opposite of ground truth
-
-    #print("Cross entropy: ", torch.nn.functional.cross_entropy(model_predictions, torch.from_numpy(batches_label).type(torch.LongTensor)))
 
     softmaxed = torch.nn.functional.softmax(model_predictions, dim=1)
     softmaxed = softmaxed.detach().numpy()
@@ -87,20 +82,46 @@ def main_func(cfg: DictConfig) -> None:
 
     accuracy = sum(prediction_label == batches_label) / len(prediction_label)
 
-    #print(accuracy)
+    cross_entropy = torch.nn.functional.cross_entropy(model_predictions, torch.from_numpy(batches_label).type(torch.LongTensor))
 
-    return accuracy
+    return accuracy, cross_entropy
 
   for condition in pv_conditions:
-    condition_accuracy = test_batch(condition)
+    condition_accuracy, condition_cross_entropy = test_batch(condition)
     pv_accuracy.append(condition_accuracy)
+    pv_cross_entropy.append(condition_cross_entropy)
 
   for condition in av_conditions:
-    condition_accuracy = test_batch(condition)
+    condition_accuracy, condition_cross_entropy = test_batch(condition)
     av_accuracy.append(condition_accuracy)
+    av_cross_entropy.append(condition_cross_entropy)
 
-  plt.plot(list(range(13)), pv_accuracy, 'r-', label="Pro-vernier accuracy")
-  plt.plot(list(range(13)), av_accuracy, 'b-', label="Anti-vernier accuracy")
+  log_michael_plot(pv_accuracy, av_accuracy)
+  log_michael_plot_ce(pv_cross_entropy, av_cross_entropy)
+
+  display_plot(pv_accuracy, av_accuracy)
+
+def log_michael_plot(pv_accuracy, av_accuracy):
+  wandb_logger.experiment.log({"Michael plot": wandb.plot.line_series(
+    xs=list(range(1, 13)),
+    ys=[pv_accuracy, av_accuracy],
+    keys=["Pro-vernier accuracy", "Anti-vernier accuracy"],
+    title="Michael plot",
+    xname="Frame number",
+  )})
+
+def log_michael_plot_ce(pv_cross_entropy, av_cross_entropy):
+  wandb_logger.experiment.log({"Michael cross-entropy plot": wandb.plot.line_series(
+    xs=list(range(1, 13)),
+    ys=[pv_cross_entropy, av_cross_entropy],
+    keys=["Pro-vernier cross-entropy", "Anti-vernier cross-entropy"],
+    title="Michael cross-entropy plot",
+    xname="Frame number"
+  )})
+
+def display_plot(pv_accuracy, av_accuracy):
+  plt.plot(list(range(1, 13)), pv_accuracy, 'r-', label="Pro-vernier accuracy")
+  plt.plot(list(range(1, 13)), av_accuracy, 'b-', label="Anti-vernier accuracy")
   plt.legend()
   plt.show()
 
