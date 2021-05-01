@@ -1,1 +1,7 @@
-test: test
+model_artifact: 'model_Net_disc_low_train_LR_vernier_classifier:latest'
+model_filename: 'final_model.ckpt'
+
+batch_size: 4
+
+random_start_pos: False
+random_size: False

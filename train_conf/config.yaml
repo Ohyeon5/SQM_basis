@@ -5,7 +5,7 @@ defaults:
 load_model: False
 model_artifact: 'model_Net_disc_low_train_hand_gesture_classifier:latest'
 model_filename: 'final_model.ckpt'
-head_n: 2048
+head_n: 4096 # 2048 for phase 1
 
 # model artifact names:
 # Net_disc_low
