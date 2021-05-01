@@ -9,13 +9,26 @@ from tqdm import tqdm
 
 # Neil class
 class Neil():
-
   # Initialize object's properties
   def __init__(self, set_type, objects, batch_s, scl, n_frames, c, wn_h, wn_w, grav, random_start_pos=False, random_start_speed=False, random_size=False):
-    # x and y denote the starting position of the vernier
+    """
+    Parameters
+    ----------
+    set_type: str
+    objects: int
+    batch_s: int
+    scl: float
+    n_frames: int
+    ???
+    wn_h: int
+    wn_w: int
+    """
+    # x and y denote the starting position of the center of the vernier
     if random_start_pos:
-      x = rng().uniform(0, wn_w, (1, batch_s))
-      y = rng().uniform(0, wn_h, (1, batch_s))
+      x_margin = 10
+      y_margin = 10
+      x = rng().uniform(x_margin, wn_w - x_margin, (1, batch_s))
+      y = rng().uniform(y_margin, wn_h - y_margin, (1, batch_s))
     else:
       x = np.ones((1, batch_s)) * wn_w//2
       y = np.ones((1, batch_s)) * wn_h//2
@@ -29,10 +42,10 @@ class Neil():
       vx         = np.ones((1, batch_s))*flow
       vy         = np.ones((1, batch_s))*0.0
 
+    # sizx and sizy denote the size of half a vernier
     if random_size:
       self.sizx  = rng().uniform(wn_w/10, wn_w/2, (1, batch_s))  # max: /4
-      #self.sizy  = rng().uniform(wn_w/10, min(wn_w/2, wn_w - y), (1, batch_s))  # max: /4
-      self.sizy  = rng().uniform(wn_w/10, wn_w/2, (1, batch_s))
+      self.sizy  = rng().uniform(wn_h/10, np.minimum(y, wn_h - y), (1, batch_s))  # max: /4
     else:
       self.sizx  = np.ones((1, batch_s))*wn_w/5
       self.sizy  = np.ones((1, batch_s))*wn_w/4
@@ -43,7 +56,6 @@ class Neil():
       self.ori   = rng().uniform(0, 2*np.pi,      (1, batch_s))
       self.colr  = rng().randint(100, 255,        (c, batch_s))
       self.pop_t = rng().randint(0, n_frames//2,  (1, batch_s))
-      #print("Initialized with x: {}, y: {}, vx: {}, vy: {}".format(x, y, vx, vy)) TODO remove me
     if set_type == 'sqm':
       choices    = ['vernier']
       self.ori   = np.ones((1, batch_s))*0.0
@@ -236,12 +248,12 @@ if __name__ == '__main__':
   import os
   
   set_type     = 'sqm'    # 'recons', 'decode' or 'sqm'
-  condition    = 'V-PV1'  # 'V', 'V-PVn' or 'V-AVn', n > 0
+  condition    = 'V-PV3'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 1 # number of objects in one video sequence
   n_frames     = 13 # length of video sequence in frames
   scale        = 1
   batch_s      = 4 # number of video sequences to generate simultaneously
-  n_channels   = 1 # number of channels of video sequences
+  n_channels   = 3 # number of channels of video sequences
   batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, n_channels), condition, random_start_pos=True, random_size=True)
   if set_type == 'recons':
     batch_frames = batch_maker.generate_batch()
