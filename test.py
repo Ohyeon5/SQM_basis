@@ -60,7 +60,7 @@ def main_func(cfg: DictConfig) -> None:
   pv_cross_entropy = []
   av_cross_entropy = []
 
-  def test_batch(condition):
+  def test_batch(condition, log_input=False, n_seq_log=4):
     batch_size = cfg.batch_size
     batch_maker = BatchMaker('sqm', 1, batch_size, 13, (64, 64, 3), condition, random_start_pos=cfg.random_start_pos, random_size=cfg.random_size)
 
@@ -72,6 +72,11 @@ def main_func(cfg: DictConfig) -> None:
 
     # B x C x T x H x W
     model_predictions = model(images)
+
+    if log_input:
+      # Log the test images
+      video_sample = images.detach().cpu()[n_seq_log].transpose(1, 2).numpy().astype('uint8')
+      wandb_logger.experiment.log({'video sample': wandb.Video(video_sample)}, commit=False)
 
     # If pro-vernier, should be reinforced toward ground truth
     # If anti-vernier, should be reinforced toward opposite of ground truth
@@ -87,12 +92,12 @@ def main_func(cfg: DictConfig) -> None:
     return accuracy, cross_entropy
 
   for condition in pv_conditions:
-    condition_accuracy, condition_cross_entropy = test_batch(condition)
+    condition_accuracy, condition_cross_entropy = test_batch(condition, log_input=True)
     pv_accuracy.append(condition_accuracy)
     pv_cross_entropy.append(condition_cross_entropy)
 
   for condition in av_conditions:
-    condition_accuracy, condition_cross_entropy = test_batch(condition)
+    condition_accuracy, condition_cross_entropy = test_batch(condition, log_input=True)
     av_accuracy.append(condition_accuracy)
     av_cross_entropy.append(condition_cross_entropy)
 

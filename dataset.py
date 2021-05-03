@@ -252,9 +252,9 @@ if __name__ == '__main__':
   n_objects    = 1 # number of objects in one video sequence
   n_frames     = 13 # length of video sequence in frames
   scale        = 1
-  batch_s      = 4 # number of video sequences to generate simultaneously
+  batch_s      = 10 # number of video sequences to generate simultaneously
   n_channels   = 3 # number of channels of video sequences
-  batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, n_channels), condition, random_start_pos=True, random_size=True)
+  batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, n_channels), condition, random_start_pos=False, random_size=True)
   if set_type == 'recons':
     batch_frames = batch_maker.generate_batch()
   else:
