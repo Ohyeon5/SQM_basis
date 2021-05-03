@@ -74,6 +74,7 @@ def main_func(cfg: DictConfig) -> None:
   print("Training model {} on task {} for maximum {} epochs".format(cfg.model.arch_id, cfg.rc.task, cfg.rc.n_epochs))
 
   wandb_logger.experiment.config.update({"num_epochs": cfg.rc.n_epochs, "batch_size": cfg.rc.batch_size})
+  # TODO log the cfg.rc dictionary!
 
   model_identifier = "{}_{}".format(cfg.model.arch_id, cfg.rc.task)
   model_artifact = wandb.Artifact("model_{}".format(model_identifier), type='model', metadata=OmegaConf.to_container(cfg, resolve=True))
