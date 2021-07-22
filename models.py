@@ -13,6 +13,8 @@ import hydra
 
 from SQM_discreteness.convlstm_SreenivasVRao import ConvLSTM
 
+# TODO fix memory problems by not using tensors anymore when float is desired
+
 class Wrapper(pl.LightningModule):
   """Wrap a convolutional module, an encoder and a decoder
 

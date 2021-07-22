@@ -48,7 +48,7 @@ from SQM_discreteness.convlstm_SreenivasVRao import ConvLSTM
 wandb_logger = WandbLogger(project="lr-vernier-classification", entity="lpsy_sqm", log_model=True, job_type='train')
 
 # TODO log this as well!
-pl.seed_everything(1) # seed all PRNGs for reproducibility
+#pl.seed_everything(1) # seed all PRNGs for reproducibility
 
 def train_model(model, data_module, n_epochs):
   # Log dataset statistics
@@ -76,7 +76,7 @@ def main_func(cfg: DictConfig) -> None:
   wandb_logger.experiment.config.update({"num_epochs": cfg.rc.n_epochs, "batch_size": cfg.rc.batch_size})
   # TODO log the cfg.rc dictionary!
 
-  model_identifier = "{}_{}".format(cfg.model.arch_id, cfg.rc.task)
+  model_identifier = "{}_{}_{}".format(cfg.model.arch_id, cfg.rc.task, cfg.model_uuid)
   model_artifact = wandb.Artifact("model_{}".format(model_identifier), type='model', metadata=OmegaConf.to_container(cfg, resolve=True))
 
   train_data_artifact = wandb_logger.experiment.use_artifact(cfg.rc.train_data_artifact)
