@@ -20,6 +20,10 @@ import matplotlib.pyplot as plt
 
 import wandb
 
+from captum.attr import (
+  IntegratedGradients
+)
+
 wandb_logger = WandbLogger(project="lr-vernier-classification", entity="lpsy_sqm", job_type='test')
 
 pl.seed_everything(42) # seed all PRNGs for reproducibility
@@ -45,8 +49,6 @@ def main_func(cfg: DictConfig) -> None:
   #dataset_path = dataset_artifact.download()
   #print("Download done!")
 
-  #test_trainer = pl.Trainer(gpus=1, logger=wandb_logger, deterministic=True)
-
   #data_module = ExperimentDataModule(os.path.join(dataset_path, 'video_data.hdf5'))
 
   model = Wrapper.load_from_checkpoint(os.path.join(model_path, cfg.model_filename))
@@ -60,10 +62,29 @@ def main_func(cfg: DictConfig) -> None:
   pv_cross_entropy = []
   av_cross_entropy = []
 
-  def test_batch(condition, log_input=False, n_seq_log=4):
-    batch_size = cfg.batch_size
-    batch_maker = BatchMaker('sqm', 1, batch_size, 13, (64, 64, 3), condition, random_start_pos=cfg.random_start_pos, random_size=cfg.random_size)
+  def ig_attribution():
+    test_batch_maker = BatchMaker('sqm', 1, 1, 13, (64, 64, 3), 'V-PV1', random_start_pos=False, random_size=False)
+    batches_frames, batches_label = test_batch_maker.generate_batch()
+    batches_frames = [torch.from_numpy(np.moveaxis(batch_frames, -1, 1).astype('float32')) for batch_frames in batches_frames]
+    images = torch.stack(batches_frames, 2)
+    model.eval()
+    baseline = torch.zeros_like(images)
+    ig = IntegratedGradients(model)
+    batches_label = batches_label.tolist()
+    attributions = ig.attribute(images, baseline, target=batches_label)
+    print('IG attributions:', attributions)
+    #for frame in range(13):
+      #frame_attrib = attributions[:, :, frame, :, :]
+      #plt.hist(frame_attrib.numpy().flatten())
+      #plt.show()
+    frame_attr = np.sum(attributions.numpy(), axis=(0, 1, 3, 4))
+    print("Frame attr", type(frame_attr), frame_attr)
 
+  ig_attribution()
+
+  return 0
+
+  def test_batch(batch_maker, log_input=False, n_seq_log=4):
     batches_frames, batches_label = batch_maker.generate_batch()
 
     batches_frames = [torch.from_numpy(np.moveaxis(batch_frames, -1, 1).astype('float32')) for batch_frames in batches_frames]
@@ -75,7 +96,7 @@ def main_func(cfg: DictConfig) -> None:
 
     if log_input:
       # Log the test images
-      video_sample = images.detach().cpu()[n_seq_log].transpose(1, 2).numpy().astype('uint8')
+      video_sample = images.detach().cpu()[:n_seq_log].transpose(1, 2).numpy().astype('uint8')
       wandb_logger.experiment.log({'video sample': wandb.Video(video_sample)}, commit=False)
 
     # If pro-vernier, should be reinforced toward ground truth
@@ -87,19 +108,31 @@ def main_func(cfg: DictConfig) -> None:
 
     accuracy = sum(prediction_label == batches_label) / len(prediction_label)
 
-    cross_entropy = torch.nn.functional.cross_entropy(model_predictions, torch.from_numpy(batches_label).type(torch.LongTensor))
+    cross_entropy = float(torch.nn.functional.cross_entropy(model_predictions, torch.from_numpy(batches_label).type(torch.LongTensor)))
 
     return accuracy, cross_entropy
 
   for condition in pv_conditions:
-    condition_accuracy, condition_cross_entropy = test_batch(condition, log_input=True)
-    pv_accuracy.append(condition_accuracy)
-    pv_cross_entropy.append(condition_cross_entropy)
+    condition_accuracy = 0
+    condition_cross_entropy = 0
+    batch_maker = BatchMaker('sqm', 1, cfg.batch_size, 13, (64, 64, 3), condition, random_start_pos=cfg.random_start_pos, random_size=cfg.random_size)
+    for batch in range(cfg.n_batches):
+      batch_accuracy, batch_cross_entropy = test_batch(batch_maker, log_input=True)
+      condition_accuracy += batch_accuracy
+      condition_cross_entropy += batch_cross_entropy
+    pv_accuracy.append(condition_accuracy / cfg.n_batches)
+    pv_cross_entropy.append(condition_cross_entropy / cfg.n_batches)
 
   for condition in av_conditions:
-    condition_accuracy, condition_cross_entropy = test_batch(condition, log_input=True)
-    av_accuracy.append(condition_accuracy)
-    av_cross_entropy.append(condition_cross_entropy)
+    condition_accuracy = 0
+    condition_cross_entropy = 0
+    batch_maker = BatchMaker('sqm', 1, cfg.batch_size, 13, (64, 64, 3), condition, random_start_pos=cfg.random_start_pos, random_size=cfg.random_size)
+    for batch in range(cfg.n_batches):
+      batch_accuracy, batch_cross_entropy = test_batch(batch_maker, log_input=True)
+      condition_accuracy += batch_accuracy
+      condition_cross_entropy += batch_cross_entropy
+    av_accuracy.append(condition_accuracy / cfg.n_batches)
+    av_cross_entropy.append(condition_cross_entropy / cfg.n_batches)
 
   log_michael_plot(pv_accuracy, av_accuracy)
   log_michael_plot_ce(pv_cross_entropy, av_cross_entropy)
