@@ -1,11 +1,11 @@
 defaults:
-  - model: net_disc_low_simple
+  - model: continuous
   - rc: phase1
 
 model_uuid: '1'
 
 load_model: False
-model_artifact: 'model_Net_disc_low_simple_train_hand_gesture_classifier_1:latest'
+model_artifact: 'model_Continuous_train_hand_gesture_classifier_1:latest'
 model_filename: 'final_model.ckpt'
 head_n: 0 # 2048 for phase 1
 

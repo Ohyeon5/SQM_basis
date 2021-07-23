@@ -50,7 +50,7 @@ wandb_logger = WandbLogger(project="lr-vernier-classification", entity="lpsy_sqm
 # TODO log this as well!
 #pl.seed_everything(1) # seed all PRNGs for reproducibility
 
-def train_model(model, data_module, n_epochs):
+def train_model(model, data_module, n_epochs, val_every_n=4):
   # Log dataset statistics
   wandb_logger.experiment.config.update({"train_ds_len": len(data_module.train_ds), "val_ds_len": len(data_module.val_ds)})
   
@@ -58,7 +58,7 @@ def train_model(model, data_module, n_epochs):
 
   # gradient_clip_val=0.5 for gradient clipping
   trainer = pl.Trainer(gpus=1, logger=wandb_logger, log_every_n_steps=4, min_epochs=16, max_epochs=n_epochs,
-    callbacks=[EarlyStopping('loss', patience=10)], deterministic=False, check_val_every_n_epoch=4)
+    callbacks=[EarlyStopping('loss', patience=10)], deterministic=False, check_val_every_n_epoch=val_every_n)
 
   trainer.fit(model, data_module)
 
@@ -102,7 +102,7 @@ def main_func(cfg: DictConfig) -> None:
     model = Wrapper(cfg.model.conv_module, cfg.model.encoder_module, cfg.model.decoder_module,
       train_conv=do_train.train_conv, train_encoder=do_train.train_encoder, train_decoder=do_train.train_decoder)
 
-  trainer = train_model(model, data_module, cfg.rc.n_epochs)  
+  trainer = train_model(model, data_module, cfg.rc.n_epochs, cfg.rc.val_every_n)  
 
   trainer.save_checkpoint(cfg.model_filename)
   model_artifact.add_file(cfg.model_filename)
