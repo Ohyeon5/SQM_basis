@@ -73,10 +73,21 @@ def main_func(cfg: DictConfig) -> None:
     batches_label = batches_label.tolist()
     attributions = ig.attribute(images, baseline, target=batches_label)
     print('IG attributions:', attributions)
-    #for frame in range(13):
-      #frame_attrib = attributions[:, :, frame, :, :]
+    for frame in range(13):
+      display_image = images[0, :, frame, :, :].int()
+      display_image = torch.transpose(display_image, 0, 2)
+      print(display_image)
+      plt.axis('off')
+      plt.imshow(display_image)
+      plt.show()
+      frame_attrib = attributions[0, :, frame, :, :]
+      max_attrib = torch.max(frame_attrib)
+      min_attrib = torch.min(frame_attrib)
+      frame_attrib = (frame_attrib - min_attrib) / (max_attrib - min_attrib)
+      frame_attrib = torch.transpose(frame_attrib, 0, 2)
+      plt.imshow(frame_attrib)
       #plt.hist(frame_attrib.numpy().flatten())
-      #plt.show()
+      plt.show()
     frame_attr = np.sum(attributions.numpy(), axis=(0, 1, 3, 4))
     print("Frame attr", type(frame_attr), frame_attr)
 
