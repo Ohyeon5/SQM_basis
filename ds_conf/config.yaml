@@ -1,6 +1,6 @@
-file_path: 'dataset.h5'
-n_sequences: 4096 #512
-sequence_type: 'decode' # recons, decode or sqm
+file_path: ???
+n_sequences: ???
+sequence_type: ??? # recons, decode or sqm
 condition: 'V'
 n_objects: 1
 n_frames: 13

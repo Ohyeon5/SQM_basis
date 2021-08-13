@@ -1,6 +1,6 @@
 # @package _group_
 n_epochs: 2
-batch_size: 32 #64
+batch_size: 64
 val_every_n: 1
 train_data_artifact: 'hand_gestures_train_5:latest'
 train_data_filename: 'train_hdf55.h5'

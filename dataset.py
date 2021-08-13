@@ -7,8 +7,6 @@ from skimage.transform import resize, rotate
 
 from tqdm import tqdm
 
-import random
-
 # Neil class
 class Neil():
   # Initialize object's properties
@@ -16,7 +14,7 @@ class Neil():
     """
     Parameters
     ----------
-    set_type: str, can be recons, decode, sqm
+    set_type: str
     objects: int
     batch_s: int
     scl: float
@@ -57,7 +55,7 @@ class Neil():
       choices    = ['rectangle', 'ellipse', 'vernier'] if set_type == 'recons' else ['vernier']
       self.ori   = rng().uniform(0, 2*np.pi,      (1, batch_s))
       self.colr  = rng().randint(100, 255,        (c, batch_s))
-      self.pop_t = rng().randint(0, n_frames//2,  (1, batch_s)) # Frame where the object is "popped", i.e. becomes visible
+      self.pop_t = rng().randint(0, n_frames//2,  (1, batch_s))
     if set_type == 'sqm':
       choices    = ['vernier']
       self.ori   = np.ones((1, batch_s))*0.0
@@ -130,8 +128,8 @@ class Neil():
 
     # SQM related changes
     if set_type == 'sqm':
-      condition = cond[:-1] # the kind of offset, pro or anti
-      change_t  = int(cond[-1]) # frame where it changes
+      condition = cond[:-1]
+      change_t  = int(cond[-1])
       for b in range(batch_s):
         if t == self.pop_t[0, b]:
           self.side_[:, b] = self.side[:, b]                 # seed offset
@@ -142,17 +140,6 @@ class Neil():
             objects[-1].side_[:, b] = self.side[:, b]      # same offset
         else:
           self.side_[:, b] = 2                               # no offset
-
-    if set_type == 'decode':
-      for b in range(batch_s):
-        rand = random.random()
-        if t > self.pop_t[0, b]: # TODO apply stochastic to first frame too
-          if rand < 0: # TODO set to 0
-            objects[-1].side_[:, b] = 1 - self.side[:, b]
-          elif rand < 0.5:
-            objects[-1].side_[:, b] = self.side[:, b]
-          else:
-            self.side_[:, b] = 2
 
   # Draw the object (square patch)
   def draw(self, wn, batch_s):
@@ -260,7 +247,7 @@ if __name__ == '__main__':
   import imageio  # conda install -c conda-forge imageio
   import os
   
-  set_type     = 'decode'    # 'recons', 'decode' or 'sqm'
+  set_type     = 'sqm'    # 'recons', 'decode' or 'sqm'
   condition    = 'V-PV3'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 1 # number of objects in one video sequence
   n_frames     = 13 # length of video sequence in frames

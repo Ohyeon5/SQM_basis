@@ -34,7 +34,7 @@ from pytorch_lightning.loggers import WandbLogger
 
 from dataset import BatchMaker
 
-from data_utils import VernierDataModule, VernierOnlineDataModule
+from data_utils import VernierDataModule
 
 from config_schema import JobConfig, ModelConfig
 
@@ -76,20 +76,19 @@ def main_func(cfg: DictConfig) -> None:
   wandb_logger.experiment.config.update({"num_epochs": cfg.rc.n_epochs, "batch_size": cfg.rc.batch_size})
   # TODO log the cfg.rc dictionary!
 
-  if cfg.rc.train_online:
-    data_module = VernierOnlineDataModule('decode', 1, cfg.rc.batch_size, 13, 1, 3, None)
-  else:
-    train_data_artifact = wandb_logger.experiment.use_artifact(cfg.rc.train_data_artifact)
-    train_dataset = train_data_artifact.download()
-    print("Train dataset path", train_dataset)
+  model_identifier = "{}_{}_{}".format(cfg.model.arch_id, cfg.rc.task, cfg.model_uuid)
+  model_artifact = wandb.Artifact("model_{}".format(model_identifier), type='model', metadata=OmegaConf.to_container(cfg, resolve=True))
 
-    if cfg.rc.separate_val:
-      val_data_artifact = wandb_logger.experiment.use_artifact(cfg.rc.val_data_artifact)
-      val_dataset = val_data_artifact.download()
-      data_module = VernierDataModule(os.path.join(train_dataset, cfg.rc.train_data_filename), cfg.rc.batch_size, head_n=cfg.head_n,
-        val_data_path=os.path.join(val_dataset, cfg.rc.val_data_filename), ds_transform=ToTensor(cfg.rc.is_channels_last))
-    else:
-      data_module = VernierDataModule(os.path.join(train_dataset, cfg.rc.train_data_filename), cfg.rc.batch_size, head_n=cfg.head_n, ds_transform=ToTensor(cfg.rc.is_channels_last))
+  train_data_artifact = wandb_logger.experiment.use_artifact(cfg.rc.train_data_artifact)
+  train_dataset = train_data_artifact.download()
+
+  if cfg.rc.separate_val:
+    val_data_artifact = wandb_logger.experiment.use_artifact(cfg.rc.val_data_artifact)
+    val_dataset = val_data_artifact.download()
+    data_module = VernierDataModule(os.path.join(train_dataset, cfg.rc.train_data_filename), cfg.rc.batch_size, head_n=cfg.head_n,
+      val_data_path=os.path.join(val_dataset, cfg.rc.val_data_filename), ds_transform=ToTensor(cfg.rc.is_channels_last))
+  else:
+    data_module = VernierDataModule(os.path.join(train_dataset, cfg.rc.train_data_filename), cfg.rc.batch_size, head_n=cfg.head_n, ds_transform=ToTensor(cfg.rc.is_channels_last))
 
   do_train = cfg.rc.do_train
 
@@ -100,9 +99,6 @@ def main_func(cfg: DictConfig) -> None:
     model = Wrapper.load_from_checkpoint(os.path.join(prev_model_path, cfg.model_filename),
       train_conv=do_train.train_conv, train_encoder=do_train.train_encoder, train_decoder=do_train.train_decoder)
   else:
-    model_identifier = "{}_{}_{}".format(cfg.model.arch_id, cfg.rc.task, cfg.model_uuid)
-    print("Initializing model", model_identifier)
-    model_artifact = wandb.Artifact("model_{}".format(model_identifier), type='model', metadata=OmegaConf.to_container(cfg, resolve=True))
     model = Wrapper(cfg.model.conv_module, cfg.model.encoder_module, cfg.model.decoder_module,
       train_conv=do_train.train_conv, train_encoder=do_train.train_encoder, train_decoder=do_train.train_decoder)
 

@@ -63,7 +63,7 @@ def main_func(cfg: DictConfig) -> None:
   av_cross_entropy = []
 
   def ig_attribution():
-    test_batch_maker = BatchMaker('sqm', 1, 1, 13, (64, 64, 3), 'V-PV6', random_start_pos=False, random_size=False)
+    test_batch_maker = BatchMaker('sqm', 1, 1, 13, (64, 64, 3), 'V-PV1', random_start_pos=False, random_size=False)
     batches_frames, batches_label = test_batch_maker.generate_batch()
     batches_frames = [torch.from_numpy(np.moveaxis(batch_frames, -1, 1).astype('float32')) for batch_frames in batches_frames]
     images = torch.stack(batches_frames, 2)
@@ -91,9 +91,9 @@ def main_func(cfg: DictConfig) -> None:
     frame_attr = np.sum(attributions.numpy(), axis=(0, 1, 3, 4))
     print("Frame attr", type(frame_attr), frame_attr)
 
-  #ig_attribution()
+  ig_attribution()
 
-  #return 0
+  return 0
 
   def test_batch(batch_maker, log_input=False, n_seq_log=4):
     batches_frames, batches_label = batch_maker.generate_batch()
