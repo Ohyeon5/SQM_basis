@@ -1,11 +1,11 @@
 defaults:
-  - model: continuous
-  - rc: phase1
+  - model: net_disc_low_simple
+  - rc: phase2
 
 model_uuid: '1'
 
-load_model: False
-model_artifact: 'model_Continuous_train_hand_gesture_classifier_1:latest'
+load_model: True
+model_artifact: 'model_Net_disc_low_simple_train_hand_gesture_classifier_1:latest'
 model_filename: 'final_model.ckpt'
 head_n: 0 # 2048 for phase 1
 
@@ -15,3 +15,5 @@ head_n: 0 # 2048 for phase 1
 # Net_disc_high_simple
 # Net_disc_high_redundant
 # Continuous
+
+# TODO: net_disc_low_simple 5 for phase 1 might be corrupt!

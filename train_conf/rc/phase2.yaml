@@ -1,8 +1,10 @@
 # @package _group_
-n_epochs: 32
+n_epochs: 2
 batch_size: 32
-train_data_artifact: 'left_right_vernier:latest'
-train_data_filename: 'vernier_decode.hdf5'
+val_every_n: 1
+train_online: False
+train_data_artifact: 'videos_decode_V:latest' # 'left_right_vernier:latest'
+train_data_filename: 'dataset.h5' # 'vernier_decode.hdf5'
 is_channels_last: False
 task: 'train_LR_vernier_classifier'
 separate_val: False

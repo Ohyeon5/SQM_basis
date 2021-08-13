@@ -1,8 +1,8 @@
-model_artifact: 'model_Net_disc_low_train_LR_vernier_classifier:latest'
+model_artifact: 'model_Net_disc_low_simple_train_LR_vernier_classifier_1:latest' # 'model_Net_disc_low_train_LR_vernier_classifier:latest'
 model_filename: 'final_model.ckpt'
 
-batch_size: 1 #8
-n_batches: 1 #12
+batch_size: 8 #1 #8
+n_batches: 12 #1 #12
 
 random_start_pos: False
 random_size: True
