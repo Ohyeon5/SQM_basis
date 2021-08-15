@@ -76,9 +76,6 @@ def main_func(cfg: DictConfig) -> None:
   wandb_logger.experiment.config.update({"num_epochs": cfg.rc.n_epochs, "batch_size": cfg.rc.batch_size})
   # TODO log the cfg.rc dictionary!
 
-  model_identifier = "{}_{}_{}".format(cfg.model.arch_id, cfg.rc.task, cfg.model_uuid)
-  model_artifact = wandb.Artifact("model_{}".format(model_identifier), type='model', metadata=OmegaConf.to_container(cfg, resolve=True))
-
   train_data_artifact = wandb_logger.experiment.use_artifact(cfg.rc.train_data_artifact)
   train_dataset = train_data_artifact.download()
 
@@ -93,12 +90,14 @@ def main_func(cfg: DictConfig) -> None:
   do_train = cfg.rc.do_train
 
   if cfg.load_model:
+    model_artifact = wandb_logger.experiment.use_artifact(cfg.model_artifact)
     print("Loading model", cfg.model_artifact)
-    prev_model_artifact = wandb_logger.experiment.use_artifact(cfg.model_artifact)
-    prev_model_path = prev_model_artifact.download()
-    model = Wrapper.load_from_checkpoint(os.path.join(prev_model_path, cfg.model_filename),
+    model_path = model_artifact.download()
+    model = Wrapper.load_from_checkpoint(os.path.join(model_path, cfg.model_filename),
       train_conv=do_train.train_conv, train_encoder=do_train.train_encoder, train_decoder=do_train.train_decoder)
   else:
+    model_identifier = "{}_{}_{}".format(cfg.model.arch_id, cfg.rc.task, cfg.model_uuid)
+    model_artifact = wandb.Artifact("model_{}".format(model_identifier), type='model', metadata=OmegaConf.to_container(cfg, resolve=True))
     model = Wrapper(cfg.model.conv_module, cfg.model.encoder_module, cfg.model.decoder_module,
       train_conv=do_train.train_conv, train_encoder=do_train.train_encoder, train_decoder=do_train.train_decoder)
 
