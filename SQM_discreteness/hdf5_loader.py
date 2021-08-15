@@ -184,7 +184,15 @@ class ToTensor(object):
         return {'images': images, 'label': label,
                 'label_id': torch.tensor(label_id)}
 
+class TimeShuffle(object):
+    """Shuffle frames of a sequence in time."""
+    def __call__(self, sample):
+        images, label, label_id = sample['images'], sample['label'], sample['label_id']
 
+        rng = np.random.default_rng()
+        rng.shuffle(images)
+
+        return {'images': images, 'label': label,  'label_id': label_id}
 
 # plot hdf5_loader examples
 

@@ -1,5 +1,5 @@
 defaults:
-  - model: continuous
+  - model: net_disc_low_simple
   - rc: phase1
 
 model_uuid: '1'
