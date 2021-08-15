@@ -91,9 +91,7 @@ def main_func(cfg: DictConfig) -> None:
     frame_attr = np.sum(attributions.numpy(), axis=(0, 1, 3, 4))
     print("Frame attr", type(frame_attr), frame_attr)
 
-  ig_attribution()
-
-  return 0
+  #ig_attribution()
 
   def test_batch(batch_maker, log_input=False, n_seq_log=4):
     batches_frames, batches_label = batch_maker.generate_batch()
