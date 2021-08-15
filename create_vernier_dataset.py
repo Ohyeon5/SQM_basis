@@ -15,7 +15,7 @@ import hydra
 
 @hydra.main(config_path='ds_conf', config_name='config')
 def main_func(cfg: DictConfig) -> None:
-  run = wandb.init(project="lr-vernier-classification", job_type='dataset')
+  run = wandb.init(project="lr-vernier-classification", entity='lpsy_sqm', job_type='dataset')
 
   ds_artifact = wandb.Artifact("videos_{}_{}".format(cfg.sequence_type, cfg.condition), type='dataset', metadata=dict(cfg))
 
