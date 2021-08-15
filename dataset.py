@@ -7,6 +7,8 @@ from skimage.transform import resize, rotate
 
 from tqdm import tqdm
 
+import random
+
 # Neil class
 class Neil():
   # Initialize object's properties
@@ -122,7 +124,6 @@ class Neil():
 
   # Compute what must be updated between the frames
   def compute_changes(self, t, batch_s, objects, set_type, cond):
-    
     # Visible objects appear
     self.popped[t >= self.pop_t] = True
 
@@ -140,6 +141,23 @@ class Neil():
             objects[-1].side_[:, b] = self.side[:, b]      # same offset
         else:
           self.side_[:, b] = 2                               # no offset
+
+    # Decode related changes, offset vernier in same direction with probability p on each frame
+    # p1 is probability of PV, p2 is probability of AV
+    p1 = 0.5
+    p2 = 0
+    if set_type == 'decode':
+      condition = cond[:-1]
+      change_t  = int(cond[-1])
+      for b in range(batch_s):
+        if t >= self.pop_t[0, b]:
+          random_num = random.random()
+          if random_num < p1:
+            objects[-1].side_[:, b] = self.side[:, b]  # same offset  
+          elif random_num < p1 + p2:
+            objects[-1].side_[:, b] = 1 - self.side[:, b]      # opposite offset
+          else:
+            self.side_[:, b] = 2                              # no offset
 
   # Draw the object (square patch)
   def draw(self, wn, batch_s):
