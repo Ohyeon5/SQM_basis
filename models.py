@@ -118,6 +118,17 @@ class Wrapper(pl.LightningModule):
     self.train_acc(torch.nn.functional.softmax(model_predictions, dim=1), batch_labels)
     self.log('val_accuracy', self.train_acc)
 
+  def test_step(self, batch, batch_idx):
+    batch_labels = batch['label_id']
+    # Stack images
+    images = torch.stack(batch['images'], 2) # B x C x T x H x W
+    # Compute the model outputs
+    model_predictions = self.forward(images)
+    # Compute the loss
+    loss = self.criterion(model_predictions, batch_labels)
+
+    return loss
+
   def show_conv_filter_rgb(self, conv_layer, fname, out_channel=0):
     fig, ax = plt.subplots()
 
