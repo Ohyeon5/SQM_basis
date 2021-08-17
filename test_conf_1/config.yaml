@@ -1,0 +1,7 @@
+model_artifact: 'model_Net_disc_low_simple_train_hand_gesture_classifier_1:latest'
+model_filename: 'final_model.ckpt'
+test_data_artifact: 'hand_gestures_train_5:latest'
+test_data_filename: 'train_hdf55.h5'
+batch_size: 32
+head_n: 0
+is_channels_last: True

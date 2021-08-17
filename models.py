@@ -127,6 +127,11 @@ class Wrapper(pl.LightningModule):
     # Compute the loss
     loss = self.criterion(model_predictions, batch_labels)
 
+    self.log('test_loss', loss.item())
+    # Log accuracy
+    self.train_acc(torch.nn.functional.softmax(model_predictions, dim=1), batch_labels)
+    self.log('test_accuracy', self.train_acc)
+
     return loss
 
   def show_conv_filter_rgb(self, conv_layer, fname, out_channel=0):

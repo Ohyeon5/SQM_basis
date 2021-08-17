@@ -53,7 +53,8 @@ class HDF5Dataset(Dataset):
         sample   = {'images': images, 'label': label, 'label_id': label_id}
         
         if self.transform:
-            sample = self.transform(sample)
+            for transform in self.transform:
+                sample = transform(sample)
 
         return sample
 

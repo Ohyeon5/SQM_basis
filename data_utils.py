@@ -23,6 +23,9 @@ class VernierDataModule(LightningDataModule):
       n_val = len(self.dataset) - n_train
       self.train_ds, self.val_ds = random_split(self.dataset, [n_train, n_val])
 
+    if test_data_path:
+      self.test_ds = HDF5Dataset(test_data_path, transform=ds_transform)
+
   def train_dataloader(self):
     train_dl = DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=False, drop_last=False)
     return train_dl
@@ -30,3 +33,7 @@ class VernierDataModule(LightningDataModule):
   def val_dataloader(self):
     val_dl = DataLoader(self.val_ds, batch_size=self.batch_size, shuffle=False, drop_last=False)
     return val_dl
+
+  def test_dataloader(self):
+    test_dl = DataLoader(self.test_ds, batch_size=self.batch_size, shuffle=False, drop_last=False)
+    return test_dl
