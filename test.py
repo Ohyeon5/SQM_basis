@@ -121,6 +121,17 @@ def main_func(cfg: DictConfig) -> None:
 
     return accuracy, cross_entropy
 
+  # Test baseline condition (only one vernier in the first frame)
+  baseline_accuracy = 0
+  baseline_cross_entropy = 0
+  batch_maker = BatchMaker('sqm', 1, cfg.batch_size, 13, (64, 64, 3), 'V', random_start_pos=cfg.random_start_pos, random_size=cfg.random_size)
+  for batch in range(cfg.n_batches):
+    batch_accuracy, batch_cross_entropy = test_batch(batch_maker, log_input=True)
+    baseline_accuracy += batch_accuracy
+    baseline_cross_entropy += batch_cross_entropy
+  baseline_accuracy = baseline_accuracy / cfg.n_batches
+  baseline_cross_entropy = baseline_cross_entropy / cfg.n_batches
+
   for condition in pv_conditions:
     condition_accuracy = 0
     condition_cross_entropy = 0
@@ -143,32 +154,33 @@ def main_func(cfg: DictConfig) -> None:
     av_accuracy.append(condition_accuracy / cfg.n_batches)
     av_cross_entropy.append(condition_cross_entropy / cfg.n_batches)
 
-  log_michael_plot(pv_accuracy, av_accuracy)
-  log_michael_plot_ce(pv_cross_entropy, av_cross_entropy)
+  log_michael_plot(pv_accuracy, av_accuracy, baseline_accuracy)
+  log_michael_plot_ce(pv_cross_entropy, av_cross_entropy, baseline_cross_entropy)
 
-  display_plot(pv_accuracy, av_accuracy)
+  display_plot(pv_accuracy, av_accuracy, baseline_accuracy)
 
-def log_michael_plot(pv_accuracy, av_accuracy):
+def log_michael_plot(pv_accuracy, av_accuracy, baseline_accuracy):
   wandb_logger.experiment.log({"Michael plot": wandb.plot.line_series(
     xs=list(range(1, 13)),
-    ys=[pv_accuracy, av_accuracy],
-    keys=["Pro-vernier accuracy", "Anti-vernier accuracy"],
+    ys=[pv_accuracy, av_accuracy, 13 * [baseline_accuracy]],
+    keys=["Pro-vernier accuracy", "Anti-vernier accuracy", "Baseline accuracy"],
     title="Michael plot",
     xname="Frame number",
   )})
 
-def log_michael_plot_ce(pv_cross_entropy, av_cross_entropy):
+def log_michael_plot_ce(pv_cross_entropy, av_cross_entropy, baseline_cross_entropy):
   wandb_logger.experiment.log({"Michael cross-entropy plot": wandb.plot.line_series(
     xs=list(range(1, 13)),
-    ys=[pv_cross_entropy, av_cross_entropy],
-    keys=["Pro-vernier cross-entropy", "Anti-vernier cross-entropy"],
+    ys=[pv_cross_entropy, av_cross_entropy, 13 * [baseline_cross_entropy]],
+    keys=["Pro-vernier cross-entropy", "Anti-vernier cross-entropy", "Baseline cross-entropy"],
     title="Michael cross-entropy plot",
     xname="Frame number"
   )})
 
-def display_plot(pv_accuracy, av_accuracy):
+def display_plot(pv_accuracy, av_accuracy, baseline_accuracy):
   plt.plot(list(range(1, 13)), pv_accuracy, 'r-', label="Pro-vernier accuracy")
   plt.plot(list(range(1, 13)), av_accuracy, 'b-', label="Anti-vernier accuracy")
+  plt.plot(list(range(1, 13)), 13 * [baseline_accuracy], 'g-', label="Baseline accuracy")
   plt.legend()
   plt.show()
 

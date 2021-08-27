@@ -1,13 +1,15 @@
 defaults:
-  - model: net_disc_low_simple
+  - model: net_disc_high_simple
   - rc: phase1
 
 model_uuid: '2'
 
 load_model: False
-model_artifact: 'model_Net_disc_low_simple_train_hand_gesture_classifier_1:latest'
+model_artifact: 'model_Net_disc_high_simple_train_hand_gesture_classifier_2:latest'
 model_filename: 'final_model.ckpt'
 head_n: 0 # 2048 for phase 1
+
+num_workers: 1 # 1 if running locally, 40 if on cluster
 
 # model artifact names:
 # Net_disc_low_simple

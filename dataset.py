@@ -144,7 +144,7 @@ class Neil():
 
     # Decode related changes, offset vernier in same direction with probability p on each frame
     # p1 is probability of PV, p2 is probability of AV
-    p1 = 0.5
+    p1 = 0.4
     p2 = 0
     if set_type == 'decode':
       condition = cond[:-1]
