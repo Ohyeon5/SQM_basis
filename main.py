@@ -83,9 +83,10 @@ def main_func(cfg: DictConfig) -> None:
     val_data_artifact = wandb_logger.experiment.use_artifact(cfg.rc.val_data_artifact)
     val_dataset = val_data_artifact.download()
     data_module = VernierDataModule(os.path.join(train_dataset, cfg.rc.train_data_filename), cfg.rc.batch_size, head_n=cfg.head_n,
-      val_data_path=os.path.join(val_dataset, cfg.rc.val_data_filename), ds_transform=ToTensor(cfg.rc.is_channels_last))
+      val_data_path=os.path.join(val_dataset, cfg.rc.val_data_filename), ds_transform=[ToTensor(cfg.rc.is_channels_last)], num_workers=cfg.num_workers)
   else:
-    data_module = VernierDataModule(os.path.join(train_dataset, cfg.rc.train_data_filename), cfg.rc.batch_size, head_n=cfg.head_n, ds_transform=ToTensor(cfg.rc.is_channels_last))
+    data_module = VernierDataModule(os.path.join(train_dataset, cfg.rc.train_data_filename), cfg.rc.batch_size, head_n=cfg.head_n,
+     ds_transform=[ToTensor(cfg.rc.is_channels_last)], num_workers=cfg.num_workers)
 
   do_train = cfg.rc.do_train
 
