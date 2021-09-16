@@ -4,9 +4,10 @@ defaults:
 
 model_uuid: '2'
 
-load_model: False
-model_artifact: 'model_Net_disc_high_simple_train_hand_gesture_classifier_2:latest'
 model_filename: 'final_model.ckpt'
+
+load_model: True
+input_model_artifact: 'model_Net_disc_high_simple_train_hand_gesture_classifier_2:latest'
 head_n: 0 # 2048 for phase 1
 
 num_workers: 1 # 1 if running locally, 40 if on cluster

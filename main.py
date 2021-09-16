@@ -91,22 +91,23 @@ def main_func(cfg: DictConfig) -> None:
   do_train = cfg.rc.do_train
 
   if cfg.load_model:
-    model_artifact = wandb_logger.experiment.use_artifact(cfg.model_artifact)
-    print("Loading model", cfg.model_artifact)
-    model_path = model_artifact.download()
+    input_model_artifact = wandb_logger.experiment.use_artifact(cfg.input_model_artifact)
+    print("Loading model", cfg.input_model_artifact)
+    model_path = input_model_artifact.download()
     model = Wrapper.load_from_checkpoint(os.path.join(model_path, cfg.model_filename),
       train_conv=do_train.train_conv, train_encoder=do_train.train_encoder, train_decoder=do_train.train_decoder)
   else:
-    model_identifier = "{}_{}_{}".format(cfg.model.arch_id, cfg.rc.task, cfg.model_uuid)
-    model_artifact = wandb.Artifact("model_{}".format(model_identifier), type='model', metadata=OmegaConf.to_container(cfg, resolve=True))
     model = Wrapper(cfg.model.conv_module, cfg.model.encoder_module, cfg.model.decoder_module,
       train_conv=do_train.train_conv, train_encoder=do_train.train_encoder, train_decoder=do_train.train_decoder)
+
+  output_model_identifier = "{}_{}_{}".format(cfg.model.arch_id, cfg.rc.task, cfg.model_uuid)
+  output_model_artifact = wandb.Artifact("model_{}".format(output_model_identifier), type='model', metadata=OmegaConf.to_container(cfg, resolve=True))
 
   trainer = train_model(model, data_module, cfg.rc.n_epochs, cfg.rc.val_every_n)  
 
   trainer.save_checkpoint(cfg.model_filename)
-  model_artifact.add_file(cfg.model_filename)
+  output_model_artifact.add_file(cfg.model_filename)
 
-  wandb_logger.experiment.log_artifact(model_artifact)
+  wandb_logger.experiment.log_artifact(output_model_artifact)
 
 main_func()
