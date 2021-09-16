@@ -180,7 +180,7 @@ def log_michael_plot_ce(pv_cross_entropy, av_cross_entropy, baseline_cross_entro
 def display_plot(pv_accuracy, av_accuracy, baseline_accuracy):
   plt.plot(list(range(1, 13)), pv_accuracy, 'r-', label="Pro-vernier accuracy")
   plt.plot(list(range(1, 13)), av_accuracy, 'b-', label="Anti-vernier accuracy")
-  plt.plot(list(range(1, 13)), 13 * [baseline_accuracy], 'g-', label="Baseline accuracy")
+  plt.plot(list(range(1, 13)), 12 * [baseline_accuracy], 'g-', label="Baseline accuracy")
   plt.legend()
   plt.show()
 
