@@ -42,14 +42,9 @@ class NeilBase():
 
     # x and y denote the starting position of the center of the vernier
     if random_start_pos:
-      print("Window width", wn_w)
-      print("Horizontal speed", self.vx)
       x_margin = n_frames * abs(self.vx) + self.sizx
-      print("X margin", x_margin)
       y_margin = self.sizy + 4
-      print("Y margin", y_margin)
       self.x = rng().uniform(x_margin, wn_w - x_margin, (1, self.batch_s))
-      print("Start x", self.x)
       self.y = rng().uniform(y_margin, wn_h - y_margin, (1, self.batch_s))
     else:
       self.x = np.ones((1, self.batch_s)) * wn_w//2
