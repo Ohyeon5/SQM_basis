@@ -22,7 +22,8 @@ def main_func(cfg: DictConfig) -> None:
   # Set up the dataset
   print("Creating a batch maker")
 
-  batch_maker = BatchMaker(cfg.sequence_type, cfg.n_objects, cfg.n_sequences, cfg.n_frames, (64*cfg.scale, 64*cfg.scale, cfg.n_channels), cfg.condition)
+  batch_maker = BatchMaker(cfg.sequence_type, cfg.n_objects, cfg.n_sequences, cfg.n_frames, (64*cfg.scale, 64*cfg.scale, cfg.n_channels), cfg.condition,
+    random_start_pos=cfg.random_start_pos, random_size=cfg.random_size, add_noise=cfg.add_noise)
 
   print("Generating batches (by frame)")
 
