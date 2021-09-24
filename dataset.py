@@ -23,32 +23,37 @@ class NeilBase():
     """
     self.batch_s = batch_s
 
-    # x and y denote the starting position of the center of the vernier
-    if random_start_pos:
-      x_margin = 10
-      y_margin = 10
-      self.x = rng().uniform(x_margin, wn_w - x_margin, (1, self.batch_s))
-      self.y = rng().uniform(y_margin, wn_h - y_margin, (1, self.batch_s))
-    else:
-      self.x = np.ones((1, self.batch_s)) * wn_w//2
-      self.y = np.ones((1, self.batch_s)) * wn_h//2
-
     # vx and vy denote the starting velocity of the vernier
     if random_start_speed:
-      self.vx         = rng().uniform(-5*scl, 5*scl,   (1, self.batch_s))
-      self.vy         = rng().uniform(-5*scl, 5*scl,   (1, batch_s))
+      self.vx         = rng().uniform(-3*scl, 3*scl,   (1, self.batch_s))
+      self.vy         = rng().uniform(-3*scl, 3*scl,   (1, batch_s))
     else:
-      flow       = (len(objects)%2 - 0.5)*8*scl**2
+      flow       = (len(objects)%2 - 0.5)*4*scl**2
       self.vx         = np.ones((1, self.batch_s))*flow
       self.vy         = np.ones((1, self.batch_s))*0.0
 
     # sizx and sizy denote the size of half a vernier
     if random_size:
       self.sizx  = rng().uniform(wn_w/10, wn_w/2, (1, self.batch_s))  # max: /4
-      self.sizy  = rng().uniform(wn_h/10, np.minimum(self.y, wn_h - self.y), (1, self.batch_s))  # max: /4
+      self.sizy  = rng().uniform(wn_h/10, wn_h/2, (1, self.batch_s))  # max: /4
     else:
       self.sizx  = np.ones((1, self.batch_s))*wn_w/5
       self.sizy  = np.ones((1, self.batch_s))*wn_w/4
+
+    # x and y denote the starting position of the center of the vernier
+    if random_start_pos:
+      print("Window width", wn_w)
+      print("Horizontal speed", self.vx)
+      x_margin = n_frames * abs(self.vx) + self.sizx
+      print("X margin", x_margin)
+      y_margin = self.sizy + 4
+      print("Y margin", y_margin)
+      self.x = rng().uniform(x_margin, wn_w - x_margin, (1, self.batch_s))
+      print("Start x", self.x)
+      self.y = rng().uniform(y_margin, wn_h - y_margin, (1, self.batch_s))
+    else:
+      self.x = np.ones((1, self.batch_s)) * wn_w//2
+      self.y = np.ones((1, self.batch_s)) * wn_h//2
 
   # Draw the object (square patch)
   def draw(self, wn, batch_s):
@@ -167,10 +172,10 @@ class NeilDecode(NeilBase):
     # Generate patches to draw the shapes efficiently
     self.patches = []
     for b in range(batch_s):
-      patch_info = self.generate_patch_info('vernier', self.sizx[0, b], self.sizy[0, b], self.ori[0, b])
+      patch_info = self.generate_patch_info(self.sizx[0, b], self.sizy[0, b], self.ori[0, b])
       self.patches.append(patch_info)
 
-  def generate_patch_info(self, shape_type, sizx, sizy, ori):
+  def generate_patch_info(self, sizx, sizy, ori):
     max_s   = int(2*max(sizx, sizy))
     patch   = np.zeros((max_s, max_s))
     
@@ -224,9 +229,9 @@ class NeilSqm(NeilBase):
     super().__init__(objects, batch_s, scl, n_frames, wn_w, wn_h, grav, random_start_pos, random_start_speed, random_size)
 
     # Select object static and dynamic properties
-    choices    = ['vernier']
-    self.ori   = np.ones((1, batch_s))*0.0
-    self.colr  = np.ones((c, batch_s), dtype=int)*255
+    choices    = ['vernier'] # type of object that appears in frames
+    self.ori   = np.ones((1, batch_s))*0.0 # orientation (rotation)
+    self.colr  = np.ones((c, batch_s), dtype=int)*255 # color
     self.pop_t = np.ones((1, batch_s), dtype=int)*3
 
     self.shape  = rng().choice(choices, (1, batch_s))
@@ -389,7 +394,7 @@ if __name__ == '__main__':
   scale        = 1
   batch_s      = 4 # number of video sequences to generate simultaneously
   n_channels   = 3 # number of channels of video sequences
-  batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, n_channels), condition, random_start_pos=False, random_size=True)
+  batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, n_channels), condition, random_start_pos=True, random_size=True)
   if set_type == 'recons':
     batch_frames = batch_maker.generate_batch()
   else:
