@@ -9,155 +9,46 @@ from tqdm import tqdm
 
 import random
 
-# Neil class
-class Neil():
-  # Initialize object's properties
-  def __init__(self, set_type, objects, batch_s, scl, n_frames, c, wn_h, wn_w, grav, random_start_pos=False, random_start_speed=False, random_size=False):
+class NeilBase():
+  def __init__(self, objects, batch_s, scl, n_frames, wn_w, wn_h, grav, random_start_pos, random_start_speed, random_size):
     """
     Parameters
     ----------
-    set_type: str
     objects: int
     batch_s: int
     scl: float
     n_frames: int
-    ???
-    wn_h: int
     wn_w: int
+    wn_h: int
     """
+    self.batch_s = batch_s
+
     # x and y denote the starting position of the center of the vernier
     if random_start_pos:
       x_margin = 10
       y_margin = 10
-      x = rng().uniform(x_margin, wn_w - x_margin, (1, batch_s))
-      y = rng().uniform(y_margin, wn_h - y_margin, (1, batch_s))
+      self.x = rng().uniform(x_margin, wn_w - x_margin, (1, self.batch_s))
+      self.y = rng().uniform(y_margin, wn_h - y_margin, (1, self.batch_s))
     else:
-      x = np.ones((1, batch_s)) * wn_w//2
-      y = np.ones((1, batch_s)) * wn_h//2
+      self.x = np.ones((1, self.batch_s)) * wn_w//2
+      self.y = np.ones((1, self.batch_s)) * wn_h//2
 
     # vx and vy denote the starting velocity of the vernier
     if random_start_speed:
-      vx         = rng().uniform(-5*scl, 5*scl,   (1, batch_s))
-      vy         = rng().uniform(-5*scl, 5*scl,   (1, batch_s))
+      self.vx         = rng().uniform(-5*scl, 5*scl,   (1, self.batch_s))
+      self.vy         = rng().uniform(-5*scl, 5*scl,   (1, batch_s))
     else:
       flow       = (len(objects)%2 - 0.5)*8*scl**2
-      vx         = np.ones((1, batch_s))*flow
-      vy         = np.ones((1, batch_s))*0.0
+      self.vx         = np.ones((1, self.batch_s))*flow
+      self.vy         = np.ones((1, self.batch_s))*0.0
 
     # sizx and sizy denote the size of half a vernier
     if random_size:
-      self.sizx  = rng().uniform(wn_w/10, wn_w/2, (1, batch_s))  # max: /4
-      self.sizy  = rng().uniform(wn_h/10, np.minimum(y, wn_h - y), (1, batch_s))  # max: /4
+      self.sizx  = rng().uniform(wn_w/10, wn_w/2, (1, self.batch_s))  # max: /4
+      self.sizy  = rng().uniform(wn_h/10, np.minimum(self.y, wn_h - self.y), (1, self.batch_s))  # max: /4
     else:
-      self.sizx  = np.ones((1, batch_s))*wn_w/5
-      self.sizy  = np.ones((1, batch_s))*wn_w/4
-
-    # Select object static and dynamic properties
-    if set_type in ['recons', 'decode']:
-      choices    = ['rectangle', 'ellipse', 'vernier'] if set_type == 'recons' else ['vernier']
-      self.ori   = rng().uniform(0, 2*np.pi,      (1, batch_s))
-      self.colr  = rng().randint(100, 255,        (c, batch_s))
-      self.pop_t = rng().randint(0, n_frames//2,  (1, batch_s))
-    if set_type == 'sqm':
-      choices    = ['vernier']
-      self.ori   = np.ones((1, batch_s))*0.0
-      self.colr  = np.ones((c, batch_s), dtype=int)*255
-      self.pop_t = np.ones((1, batch_s), dtype=int)*3
-    self.shape  = rng().choice( choices, (1, batch_s))
-    self.side   = rng().randint(0, 2, (1, batch_s)) if len(objects) == 0 else objects[0].side
-    self.side_  = 1*self.side                   # evolving value for sqm (deep copy)
-    self.popped = np.array([[False]*batch_s])   # display stimulus or not
-    self.sizx[self.shape == 'vernier'] /= 1.5   # verniers look better if not too wide
-    self.sizy[self.shape == 'vernier'] *= 2.0   # verniers appear smaller than other shapes
-    self.pos    = np.vstack((x,   y))
-    self.vel    = np.vstack((vx, vy))
-    self.acc    = np.array([[0.00]*batch_s, [grav]*batch_s])
-    
-    # Generate patches to draw the shapes efficiently
-    self.patches = []
-    for b in range(batch_s):
-      max_s   = int(2*max(self.sizx[0, b], self.sizy[0, b]))
-      patch   = np.zeros((max_s, max_s))
-      patch_0 = None
-      if self.shape[0, b] == 'ellipse':
-        center = (patch.shape[0]//2, patch.shape[1]//2)
-        radius = (self.sizy[0, b]/2, self.sizx[0, b]/2) 
-        rr, cc = ellipse(center[0], center[1], radius[0], radius[1], shape=patch.shape)
-        patch[rr, cc] = 255
-      elif self.shape[0, b] == 'rectangle':
-        start  = (int(max_s - self.sizy[0, b])//2, int(max_s - self.sizx[0, b])//2)
-        extent = (int(self.sizy[0, b]), int(self.sizx[0, b]))
-        rr, cc = rectangle(start=start, extent=extent, shape=patch.shape)
-        patch[rr, cc] = 255
-      if self.shape[0, b] == 'vernier':
-        patch_0 = np.zeros((max_s, max_s))  # patch with zero offset
-        if set_type == 'sqm':
-          side    =       self.side[0, b]
-          v_siz_w =  1 +  self.sizx[0, b]//4
-          v_siz_h =  1 +  self.sizy[0, b]//3
-          v_off_w = (1 + (self.sizx[0, b] - v_siz_w)//3)*2
-          v_off_h = (1 + (self.sizy[0, b] - v_siz_h)//6)*2 + v_siz_h//2
-        else:
-          side    = rng().randint(0, 2) if set_type == 'recons' else self.side[0, b]
-          v_siz_w = rng().uniform(1 + self.sizx[0, b]//6, 1 + self.sizx[0, b]//2)
-          v_siz_h = rng().uniform(1 + self.sizy[0, b]//4, 1 + self.sizy[0, b]//2)
-          v_off_w = rng().uniform(1,              1 + (self.sizx[0, b] - v_siz_w)//2)*2
-          v_off_h = rng().uniform(1 + v_siz_h//2, 1 + (self.sizy[0, b] - v_siz_h)//2)*2
-          if len(objects) > 0 and set_type == 'decode':
-            v_off_w = 0.0  # only one vernier (the first in the list) has an offset in decode mode
-        start1     = (int((max_s - v_off_h - v_siz_h)//2), int((max_s - v_off_w - v_siz_w)//2))
-        start2     = (int((max_s + v_off_h - v_siz_h)//2), int((max_s + v_off_w - v_siz_w)//2))
-        start01    = (int((max_s - v_off_h - v_siz_h)//2), int((max_s - 0       - v_siz_w)//2))
-        start02    = (int((max_s + v_off_h - v_siz_h)//2), int((max_s + 0       - v_siz_w)//2))
-        extent     = (int(v_siz_h), int(v_siz_w))
-        rr1,  cc1  = rectangle(start=start1,  extent=extent, shape=patch.shape)
-        rr2,  cc2  = rectangle(start=start2,  extent=extent, shape=patch.shape)
-        rr01, cc01 = rectangle(start=start01, extent=extent, shape=patch.shape)
-        rr02, cc02 = rectangle(start=start02, extent=extent, shape=patch.shape)
-        patch[  rr1,  cc1 ] = 255
-        patch[  rr2,  cc2 ] = 255
-        patch_0[rr01, cc01] = 255
-        patch_0[rr02, cc02] = 255
-      patch  = rotate(patch, self.ori[0, b]).astype(int)
-      to_add = [patch, np.fliplr(patch), patch_0]
-      self.patches.append(to_add)
-
-  # Compute what must be updated between the frames
-  def compute_changes(self, t, batch_s, objects, set_type, cond):
-    # Visible objects appear
-    self.popped[t >= self.pop_t] = True
-
-    # SQM related changes
-    if set_type == 'sqm':
-      condition = cond[:-1]
-      change_t  = int(cond[-1])
-      for b in range(batch_s):
-        if t == self.pop_t[0, b]:
-          self.side_[:, b] = self.side[:, b]                 # seed offset
-        elif change_t > 0 and t == self.pop_t[0, b] + change_t:
-          if condition == 'V-AV':
-            objects[-1].side_[:, b] = 1 - self.side[:, b]  # opposite offset  
-          if condition == 'V-PV':
-            objects[-1].side_[:, b] = self.side[:, b]      # same offset
-        else:
-          self.side_[:, b] = 2                               # no offset
-
-    # Decode related changes, offset vernier in same direction with probability p on each frame
-    # p1 is probability of PV, p2 is probability of AV
-    p1 = 0.4
-    p2 = 0
-    if set_type == 'decode':
-      condition = cond[:-1]
-      change_t  = int(cond[-1])
-      for b in range(batch_s):
-        if t >= self.pop_t[0, b]:
-          random_num = random.random()
-          if random_num < p1:
-            objects[-1].side_[:, b] = self.side[:, b]  # same offset  
-          elif random_num < p1 + p2:
-            objects[-1].side_[:, b] = 1 - self.side[:, b]      # opposite offset
-          else:
-            self.side_[:, b] = 2                              # no offset
+      self.sizx  = np.ones((1, self.batch_s))*wn_w/5
+      self.sizy  = np.ones((1, self.batch_s))*wn_w/4
 
   # Draw the object (square patch)
   def draw(self, wn, batch_s):
@@ -180,14 +71,240 @@ class Neil():
     self.vel[:, self.popped[0]] += self.acc[:, self.popped[0]] - self.vel[:, self.popped[0]]*friction
     self.pos[:, self.popped[0]] += self.vel[:, self.popped[0]]
 
+class NeilRecons(NeilBase):
+  def __init__(self, set_type, objects, batch_s, scl, n_frames, c, wn_w, wn_h, grav, random_start_pos=False, random_start_speed=False, random_size=False):
+    super().__init__(objects, batch_s, scl, n_frames, wn_w, wn_h, grav, random_start_pos, random_start_speed, random_size)
+
+    # Select object static and dynamic properties
+    choices    = ['rectangle', 'ellipse', 'vernier']
+    self.ori   = rng().uniform(0, 2*np.pi,      (1, batch_s))
+    self.colr  = rng().randint(100, 255,        (c, batch_s))
+    self.pop_t = rng().randint(0, n_frames//2,  (1, batch_s))
+
+    self.shape  = rng().choice(choices, (1, batch_s))
+    self.side   = rng().randint(0, 2, (1, batch_s)) if len(objects) == 0 else objects[0].side
+    self.side_  = 1*self.side                   # evolving value for sqm (deep copy)
+    self.popped = np.array([[False]*batch_s])   # display stimulus or not
+    self.sizx[self.shape == 'vernier'] /= 1.5   # verniers look better if not too wide
+    self.sizy[self.shape == 'vernier'] *= 2.0   # verniers appear smaller than other shapes
+    self.pos    = np.vstack((self.x,   self.y))
+    self.vel    = np.vstack((self.vx, self.vy))
+    self.acc    = np.array([[0.00]*batch_s, [grav]*batch_s])
+
+    # Generate patches to draw the shapes efficiently
+    self.patches = []
+    for b in range(batch_s):
+      patch_info = self.generate_patch_info(self.shape[0, b], self.sizx[0, b], self.sizy[0, b], self.ori[0, b])
+      self.patches.append(patch_info)
+
+  def generate_patch_info(self, shape_type, sizx, sizy, ori):
+    max_s   = int(2*max(sizx, sizy))
+    patch   = np.zeros((max_s, max_s))
+    patch_0 = None
+
+    if shape_type == 'ellipse':
+      center = (patch.shape[0]//2, patch.shape[1]//2)
+      radius = (sizy/2, sizx/2) 
+      rr, cc = ellipse(center[0], center[1], radius[0], radius[1], shape=patch.shape)
+      patch[rr, cc] = 255
+    elif shape_type == 'rectangle':
+      start  = (int(max_s - sizy//2, int(max_s - sizx)//2))
+      extent = (int(sizy), int(sizx))
+      rr, cc = rectangle(start=start, extent=extent, shape=patch.shape)
+      patch[rr, cc] = 255
+    if shape_type == 'vernier':
+      patch_0 = np.zeros((max_s, max_s))  # patch with zero offset
+      
+      v_siz_w = rng().uniform(1 + sizx//6, 1 + sizx//2)
+      v_siz_h = rng().uniform(1 + sizy//4, 1 + sizy//2)
+      v_off_w = rng().uniform(1,              1 + (sizx - v_siz_w)//2)*2
+      v_off_h = rng().uniform(1 + v_siz_h//2, 1 + (sizy - v_siz_h)//2)*2
+
+      start1     = (int((max_s - v_off_h - v_siz_h)//2), int((max_s - v_off_w - v_siz_w)//2))
+      start2     = (int((max_s + v_off_h - v_siz_h)//2), int((max_s + v_off_w - v_siz_w)//2))
+      start01    = (int((max_s - v_off_h - v_siz_h)//2), int((max_s - 0       - v_siz_w)//2))
+      start02    = (int((max_s + v_off_h - v_siz_h)//2), int((max_s + 0       - v_siz_w)//2))
+      extent     = (int(v_siz_h), int(v_siz_w))
+      rr1,  cc1  = rectangle(start=start1,  extent=extent, shape=patch.shape)
+      rr2,  cc2  = rectangle(start=start2,  extent=extent, shape=patch.shape)
+      rr01, cc01 = rectangle(start=start01, extent=extent, shape=patch.shape)
+      rr02, cc02 = rectangle(start=start02, extent=extent, shape=patch.shape)
+      patch[  rr1,  cc1 ] = 255
+      patch[  rr2,  cc2 ] = 255
+      patch_0[rr01, cc01] = 255
+      patch_0[rr02, cc02] = 255
+
+    patch  = rotate(patch, ori).astype(int)
+    patch_info = [patch, np.fliplr(patch), patch_0]
+
+    return patch_info
+
+    # Compute what must be updated between the frames
+  def compute_changes(self, t, batch_s, objects, cond):
+    # Visible objects appear
+    self.popped[t >= self.pop_t] = True
+
+class NeilDecode(NeilBase):
+  def __init__(self, set_type, objects, batch_s, scl, n_frames, c, wn_w, wn_h, grav, random_start_pos=False, random_start_speed=False, random_size=False):
+    super().__init__(objects, batch_s, scl, n_frames, wn_w, wn_h, grav, random_start_pos, random_start_speed, random_size)
+
+    # Select object static and dynamic properties
+    choices    = ['vernier']
+    self.ori   = rng().uniform(0, 2*np.pi,      (1, batch_s))
+    self.colr  = rng().randint(100, 255,        (c, batch_s))
+    self.pop_t = rng().randint(0, n_frames//2,  (1, batch_s))
+
+    self.shape  = rng().choice(choices, (1, batch_s))
+    self.side   = rng().randint(0, 2, (1, batch_s)) if len(objects) == 0 else objects[0].side
+    self.side_  = 1*self.side                   # evolving value for sqm (deep copy)
+    self.popped = np.array([[False]*batch_s])   # display stimulus or not
+    self.sizx[self.shape == 'vernier'] /= 1.5   # verniers look better if not too wide
+    self.sizy[self.shape == 'vernier'] *= 2.0   # verniers appear smaller than other shapes
+    self.pos    = np.vstack((self.x,   self.y))
+    self.vel    = np.vstack((self.vx, self.vy))
+    self.acc    = np.array([[0.00]*batch_s, [grav]*batch_s])
+
+    # Generate patches to draw the shapes efficiently
+    self.patches = []
+    for b in range(batch_s):
+      patch_info = self.generate_patch_info('vernier', self.sizx[0, b], self.sizy[0, b], self.ori[0, b])
+      self.patches.append(patch_info)
+
+  def generate_patch_info(self, shape_type, sizx, sizy, ori):
+    max_s   = int(2*max(sizx, sizy))
+    patch   = np.zeros((max_s, max_s))
+    
+    patch_0 = np.zeros((max_s, max_s))  # patch with zero offset
+
+    v_siz_w = rng().uniform(1 + sizx//6, 1 + sizx//2)
+    v_siz_h = rng().uniform(1 + sizy//4, 1 + sizy//2)
+    v_off_w = rng().uniform(1,              1 + (sizx - v_siz_w)//2)*2
+    v_off_h = rng().uniform(1 + v_siz_h//2, 1 + (sizy - v_siz_h)//2)*2
+
+    start1     = (int((max_s - v_off_h - v_siz_h)//2), int((max_s - v_off_w - v_siz_w)//2))
+    start2     = (int((max_s + v_off_h - v_siz_h)//2), int((max_s + v_off_w - v_siz_w)//2))
+    start01    = (int((max_s - v_off_h - v_siz_h)//2), int((max_s - 0       - v_siz_w)//2))
+    start02    = (int((max_s + v_off_h - v_siz_h)//2), int((max_s + 0       - v_siz_w)//2))
+    extent     = (int(v_siz_h), int(v_siz_w))
+    rr1,  cc1  = rectangle(start=start1,  extent=extent, shape=patch.shape)
+    rr2,  cc2  = rectangle(start=start2,  extent=extent, shape=patch.shape)
+    rr01, cc01 = rectangle(start=start01, extent=extent, shape=patch.shape)
+    rr02, cc02 = rectangle(start=start02, extent=extent, shape=patch.shape)
+    patch[  rr1,  cc1 ] = 255
+    patch[  rr2,  cc2 ] = 255
+    patch_0[rr01, cc01] = 255
+    patch_0[rr02, cc02] = 255
+
+    #patch  = rotate(patch, ori).astype(int)
+    patch_info = [patch, np.fliplr(patch), patch_0]
+
+    return patch_info
+
+    # Compute what must be updated between the frames
+  def compute_changes(self, t, batch_s, objects, cond):
+    # Visible objects appear
+    self.popped[t >= self.pop_t] = True
+
+    # Decode related changes, offset vernier in same direction with probability p on each frame
+    # p1 is probability of PV, p2 is probability of AV
+    p1 = 0.4
+    p2 = 0
+    for b in range(batch_s):
+      if t >= self.pop_t[0, b]:
+        random_num = random.random()
+        if random_num < p1:
+          objects[-1].side_[:, b] = self.side[:, b]  # same offset  
+        elif random_num < p1 + p2:
+          objects[-1].side_[:, b] = 1 - self.side[:, b]      # opposite offset
+        else:
+          self.side_[:, b] = 2                              # no offset
+
+class NeilSqm(NeilBase):
+  def __init__(self, set_type, objects, batch_s, scl, n_frames, c, wn_w, wn_h, grav, random_start_pos=False, random_start_speed=False, random_size=False):
+    super().__init__(objects, batch_s, scl, n_frames, wn_w, wn_h, grav, random_start_pos, random_start_speed, random_size)
+
+    # Select object static and dynamic properties
+    choices    = ['vernier']
+    self.ori   = np.ones((1, batch_s))*0.0
+    self.colr  = np.ones((c, batch_s), dtype=int)*255
+    self.pop_t = np.ones((1, batch_s), dtype=int)*3
+
+    self.shape  = rng().choice(choices, (1, batch_s))
+    self.side   = rng().randint(0, 2, (1, batch_s)) if len(objects) == 0 else objects[0].side
+    self.side_  = 1*self.side                   # evolving value for sqm (deep copy)
+    self.popped = np.array([[False]*batch_s])   # display stimulus or not
+    self.sizx[self.shape == 'vernier'] /= 1.5   # verniers look better if not too wide
+    self.sizy[self.shape == 'vernier'] *= 2.0   # verniers appear smaller than other shapes
+    self.pos    = np.vstack((self.x,   self.y))
+    self.vel    = np.vstack((self.vx, self.vy))
+    self.acc    = np.array([[0.00]*batch_s, [grav]*batch_s])
+
+    # Generate patches to draw the shapes efficiently
+    self.patches = []
+    for b in range(batch_s):
+      patch_info = self.generate_patch_info(self.sizx[0, b], self.sizy[0, b], self.ori[0, b])
+      self.patches.append(patch_info)
+
+  def generate_patch_info(self, sizx, sizy, ori):
+    max_s   = int(2*max(sizx, sizy))
+    patch   = np.zeros((max_s, max_s))
+
+    patch_0 = np.zeros((max_s, max_s))  # patch with zero offset
+
+    v_siz_w =  1 +  sizx//4
+    v_siz_h =  1 +  sizy//3
+    v_off_w = (1 + (sizx - v_siz_w)//3)*2
+    v_off_h = (1 + (sizy - v_siz_h)//6)*2 + v_siz_h//2
+
+    start1     = (int((max_s - v_off_h - v_siz_h)//2), int((max_s - v_off_w - v_siz_w)//2))
+    start2     = (int((max_s + v_off_h - v_siz_h)//2), int((max_s + v_off_w - v_siz_w)//2))
+    start01    = (int((max_s - v_off_h - v_siz_h)//2), int((max_s - 0       - v_siz_w)//2))
+    start02    = (int((max_s + v_off_h - v_siz_h)//2), int((max_s + 0       - v_siz_w)//2))
+    extent     = (int(v_siz_h), int(v_siz_w))
+    rr1,  cc1  = rectangle(start=start1,  extent=extent, shape=patch.shape)
+    rr2,  cc2  = rectangle(start=start2,  extent=extent, shape=patch.shape)
+    rr01, cc01 = rectangle(start=start01, extent=extent, shape=patch.shape)
+    rr02, cc02 = rectangle(start=start02, extent=extent, shape=patch.shape)
+    patch[  rr1,  cc1 ] = 255
+    patch[  rr2,  cc2 ] = 255
+    patch_0[rr01, cc01] = 255
+    patch_0[rr02, cc02] = 255
+
+    patch  = rotate(patch, ori).astype(int)
+    patch_info = [patch, np.fliplr(patch), patch_0]
+
+    return patch_info
+
+  # Compute what must be updated between the frames
+  def compute_changes(self, t, batch_s, objects, cond):
+    # Visible objects appear
+    self.popped[t >= self.pop_t] = True
+
+    # SQM related changes
+    condition = cond[:-1]
+    change_t  = int(cond[-1])
+    for b in range(batch_s):
+      if t == self.pop_t[0, b]:
+        self.side_[:, b] = self.side[:, b]                 # seed offset
+      elif change_t > 0 and t == self.pop_t[0, b] + change_t:
+        if condition == 'V-AV':
+          objects[-1].side_[:, b] = 1 - self.side[:, b]  # opposite offset  
+        if condition == 'V-PV':
+          objects[-1].side_[:, b] = self.side[:, b]      # same offset
+      else:
+        self.side_[:, b] = 2                               # no offset
 
 # Class to generate batches of bouncing balls
 class BatchMaker():
-
   # Initiates all values unchanged from batch to batch
   def __init__(self, set_type, n_objects, batch_s, n_frames, im_dims, condition='V', random_start_pos=False, random_size=False):
     self.set_type   = set_type
-    self.Object     = Neil  # for now
+    if set_type == 'recons':
+      self.Object = NeilRecons
+    elif set_type == 'decode':
+      self.Object = NeilDecode
+    elif set_type == 'sqm':
+      self.Object = NeilSqm
     self.n_objects  = n_objects
     self.n_max_occl = 0
     self.condition  = condition if condition != 'V' else 'V0'  # coding detail
@@ -241,7 +358,7 @@ class BatchMaker():
       # Compute and draw moving objects
       frame = self.window*1
       for i, obj in enumerate(self.objects):
-        obj.compute_changes(t, self.batch_s, self.objects, self.set_type, self.condition)
+        obj.compute_changes(t, self.batch_s, self.objects, self.condition)
       for obj in self.objects:
         obj.draw(frame, self.batch_s)
       for obj in self.objects:
@@ -265,7 +382,7 @@ if __name__ == '__main__':
   import imageio  # conda install -c conda-forge imageio
   import os
   
-  set_type     = 'sqm'    # 'recons', 'decode' or 'sqm'
+  set_type     = 'decode'    # 'recons', 'decode' or 'sqm'
   condition    = 'V-PV3'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 1 # number of objects in one video sequence
   n_frames     = 13 # length of video sequence in frames
