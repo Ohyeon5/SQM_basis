@@ -9,6 +9,8 @@ from tqdm import tqdm
 
 import random
 
+# TODO: document fact that c is the number of color channels
+
 class NeilBase():
   def __init__(self, objects, batch_s, scl, n_frames, wn_w, wn_h, grav, random_start_pos, random_start_speed, random_size):
     """
@@ -297,7 +299,7 @@ class NeilSqm(NeilBase):
 # Class to generate batches of bouncing balls
 class BatchMaker():
   # Initiates all values unchanged from batch to batch
-  def __init__(self, set_type, n_objects, batch_s, n_frames, im_dims, condition='V', random_start_pos=False, random_size=False):
+  def __init__(self, set_type, n_objects, batch_s, n_frames, im_dims, condition='V', random_start_pos=False, random_size=False, add_noise=False):
     self.set_type   = set_type
     if set_type == 'recons':
       self.Object = NeilRecons
@@ -320,6 +322,8 @@ class BatchMaker():
     # Precedence is random_start_pos then random_size
     self.random_start_pos = random_start_pos
     self.random_size = random_size
+
+    self.add_noise = add_noise
   
   # Initialize batch, objects (size, position, velocities, etc.) and background
   def init_batch(self):
@@ -330,7 +334,8 @@ class BatchMaker():
     self.window   = 127*np.ones((self.batch_s, self.wn_h, self.wn_w, self.n_chans), dtype=int)
     for _ in range(self.n_objects):
       self.objects.append(self.Object(self.set_type, self.objects, self.batch_s, self.scale,
-                  self.n_frames, self.n_chans, self.wn_h, self.wn_w, self.gravity, random_start_pos=self.random_start_pos, random_start_speed=False, random_size=self.random_size))
+                  self.n_frames, self.n_chans, self.wn_h, self.wn_w, self.gravity,
+                  random_start_pos=self.random_start_pos, random_start_speed=False, random_size=self.random_size))
     self.bg_color = rng().randint(0, 80, (self.batch_s, self.n_chans))  # if set_type == 'recons' else 40*np.ones((self.batch_s, self.n_chans))
     for b in range(self.batch_s):
       for c in range(self.n_chans):
@@ -365,6 +370,9 @@ class BatchMaker():
         obj.update_states(self.batch_s, self.friction)
 
       # Add noise and black frontground walls
+      noise_std = 0.1 * 255.0
+      noise = np.random.normal(scale=noise_std, size=frame.shape).clip(0.0, 255.0).astype(np.uint8)
+      frame += noise
       frame[self.frnt_grd] = 0.0
       self.batch.append(frame.clip(0, 255).astype(np.uint8))
 
@@ -389,7 +397,7 @@ if __name__ == '__main__':
   scale        = 1
   batch_s      = 4 # number of video sequences to generate simultaneously
   n_channels   = 3 # number of channels of video sequences
-  batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, n_channels), condition, random_start_pos=True, random_size=True)
+  batch_maker  = BatchMaker(set_type, n_objects, batch_s, n_frames, (64*scale, 64*scale, n_channels), condition, random_start_pos=True, random_size=True, add_noise=True)
   if set_type == 'recons':
     batch_frames = batch_maker.generate_batch()
   else:
