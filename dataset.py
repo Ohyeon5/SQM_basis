@@ -222,14 +222,14 @@ class NeilDecode(NeilBase):
           self.side_[:, b] = 2                              # no offset
 
 class NeilSqm(NeilBase):
-  def __init__(self, set_type, objects, batch_s, scl, n_frames, c, wn_w, wn_h, grav, random_start_pos=False, random_start_speed=False, random_size=False):
+  def __init__(self, set_type, objects, batch_s, scl, n_frames, c, wn_w, wn_h, grav, pop_t=0, random_start_pos=False, random_start_speed=False, random_size=False):
     super().__init__(objects, batch_s, scl, n_frames, wn_w, wn_h, grav, random_start_pos, random_start_speed, random_size)
 
     # Select object static and dynamic properties
     choices    = ['vernier'] # type of object that appears in frames
     self.ori   = np.ones((1, batch_s))*0.0 # orientation (rotation)
     self.colr  = np.ones((c, batch_s), dtype=int)*255 # color
-    self.pop_t = np.ones((1, batch_s), dtype=int)*3
+    self.pop_t = np.ones((1, batch_s), dtype=int)*pop_t # frame where object appears and seed offset takes place
 
     self.shape  = rng().choice(choices, (1, batch_s))
     self.side   = rng().randint(0, 2, (1, batch_s)) if len(objects) == 0 else objects[0].side
@@ -280,18 +280,21 @@ class NeilSqm(NeilBase):
   # Compute what must be updated between the frames
   def compute_changes(self, t, batch_s, objects, cond):
     # Visible objects appear
-    self.popped[t >= self.pop_t] = True
+    # self.popped[t >= self.pop_t] = True
+    self.popped[:] = True
 
     # SQM related changes
-    condition = cond[:-1]
-    change_t  = int(cond[-1])
+    vernier1_t = int(cond[1])
+    #print("Time of first vernier offset", vernier1_t)
+    vernier2_t  = int(cond[-1])
+    vernier2_type = cond[3:5]
     for b in range(batch_s):
-      if t == self.pop_t[0, b]:
-        self.side_[:, b] = self.side[:, b]                 # seed offset
-      elif change_t > 0 and t == self.pop_t[0, b] + change_t:
-        if condition == 'V-AV':
+      if t == vernier1_t:
+        objects[-1].side_[:, b] = self.side[:, b]                 # seed offset
+      elif vernier2_t > 0 and t == vernier1_t + vernier2_t:
+        if vernier2_type == 'AV':
           objects[-1].side_[:, b] = 1 - self.side[:, b]  # opposite offset  
-        if condition == 'V-PV':
+        if vernier2_type == 'PV':
           objects[-1].side_[:, b] = self.side[:, b]      # same offset
       else:
         self.side_[:, b] = 2                               # no offset
@@ -390,8 +393,8 @@ if __name__ == '__main__':
   import imageio  # conda install -c conda-forge imageio
   import os
   
-  set_type     = 'decode'    # 'recons', 'decode' or 'sqm'
-  condition    = 'V-PV3'  # 'V', 'V-PVn' or 'V-AVn', n > 0
+  set_type     = 'sqm'    # 'recons', 'decode' or 'sqm'
+  condition    = 'V7-PV9'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 1 # number of objects in one video sequence
   n_frames     = 13 # length of video sequence in frames
   scale        = 1
