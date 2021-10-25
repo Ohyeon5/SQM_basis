@@ -280,8 +280,7 @@ class NeilSqm(NeilBase):
   # Compute what must be updated between the frames
   def compute_changes(self, t, batch_s, objects, cond):
     # Visible objects appear
-    # self.popped[t >= self.pop_t] = True
-    self.popped[:] = True
+    self.popped[t >= self.pop_t] = True
 
     # SQM related changes
     vernier1_t = int(cond[1])
@@ -337,7 +336,7 @@ class BatchMaker():
     self.window   = 127*np.ones((self.batch_s, self.wn_h, self.wn_w, self.n_chans), dtype=int)
     for _ in range(self.n_objects):
       self.objects.append(self.Object(self.set_type, self.objects, self.batch_s, self.scale,
-                  self.n_frames, self.n_chans, self.wn_h, self.wn_w, self.gravity,
+                  self.n_frames, self.n_chans, self.wn_h, self.wn_w, self.gravity, pop_t=5,
                   random_start_pos=self.random_start_pos, random_start_speed=False, random_size=self.random_size))
     self.bg_color = rng().randint(0, 80, (self.batch_s, self.n_chans))  # if set_type == 'recons' else 40*np.ones((self.batch_s, self.n_chans))
     for b in range(self.batch_s):
