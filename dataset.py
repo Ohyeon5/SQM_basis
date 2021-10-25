@@ -288,13 +288,15 @@ class NeilSqm(NeilBase):
     vernier2_t  = int(cond[-1])
     vernier2_type = cond[3:5]
     for b in range(batch_s):
-      if t == vernier1_t:
+      if vernier1_t > 0 and t == vernier1_t:
         objects[-1].side_[:, b] = self.side[:, b]                 # seed offset
-      elif vernier2_t > 0 and t == vernier1_t + vernier2_t:
+      elif vernier2_t > 0 and t == vernier2_t:
         if vernier2_type == 'AV':
           objects[-1].side_[:, b] = 1 - self.side[:, b]  # opposite offset  
+          pass
         if vernier2_type == 'PV':
           objects[-1].side_[:, b] = self.side[:, b]      # same offset
+          pass
       else:
         self.side_[:, b] = 2                               # no offset
 
@@ -336,7 +338,7 @@ class BatchMaker():
     self.window   = 127*np.ones((self.batch_s, self.wn_h, self.wn_w, self.n_chans), dtype=int)
     for _ in range(self.n_objects):
       self.objects.append(self.Object(self.set_type, self.objects, self.batch_s, self.scale,
-                  self.n_frames, self.n_chans, self.wn_h, self.wn_w, self.gravity, pop_t=5,
+                  self.n_frames, self.n_chans, self.wn_h, self.wn_w, self.gravity,
                   random_start_pos=self.random_start_pos, random_start_speed=False, random_size=self.random_size))
     self.bg_color = rng().randint(0, 80, (self.batch_s, self.n_chans))  # if set_type == 'recons' else 40*np.ones((self.batch_s, self.n_chans))
     for b in range(self.batch_s):
