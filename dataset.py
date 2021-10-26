@@ -294,7 +294,7 @@ class NeilSqm(NeilBase):
 
     # SQM related changes (TODO make this more elegant)
     for b in range(batch_s):
-      if vernier1_t > 0 and t == vernier1_t:
+      if t == vernier1_t:
         objects[-1].side_[:, b] = self.side[:, b]                 # seed offset
       elif match_v2:
         vernier2_t = int(match_v2.group(2))
@@ -404,7 +404,7 @@ if __name__ == '__main__':
   import os
   
   set_type     = 'sqm'    # 'recons', 'decode' or 'sqm'
-  condition    = 'V5'  # 'V', 'V-PVn' or 'V-AVn', n > 0
+  condition    = 'V0-AV1'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 1 # number of objects in one video sequence
   n_frames     = 13 # length of video sequence in frames
   scale        = 1
