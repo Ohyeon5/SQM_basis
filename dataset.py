@@ -7,6 +7,8 @@ from skimage.transform import resize, rotate
 
 from tqdm import tqdm
 
+import re
+
 import random
 
 # TODO: document fact that c is the number of color channels
@@ -282,11 +284,14 @@ class NeilSqm(NeilBase):
     # Visible objects appear
     self.popped[t >= self.pop_t] = True
 
+    # Parse the condition to retrieve the first and second offset frame numbers
+    pattern = '^V(\d+)-(PV|AV)(\d+)$'
+    match = re.search(pattern, cond)
+    vernier1_t, vernier2_t = match.group(1, 3)
+    vernier1_t, vernier2_t = int(vernier1_t), int(vernier2_t)
+    vernier2_type = match.group(2)
+
     # SQM related changes
-    vernier1_t = int(cond[1])
-    #print("Time of first vernier offset", vernier1_t)
-    vernier2_t  = int(cond[-1])
-    vernier2_type = cond[3:5]
     for b in range(batch_s):
       if vernier1_t > 0 and t == vernier1_t:
         objects[-1].side_[:, b] = self.side[:, b]                 # seed offset
@@ -395,7 +400,7 @@ if __name__ == '__main__':
   import os
   
   set_type     = 'sqm'    # 'recons', 'decode' or 'sqm'
-  condition    = 'V7-PV9'  # 'V', 'V-PVn' or 'V-AVn', n > 0
+  condition    = 'V2-PV11'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 1 # number of objects in one video sequence
   n_frames     = 13 # length of video sequence in frames
   scale        = 1
