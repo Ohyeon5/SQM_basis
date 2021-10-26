@@ -149,14 +149,15 @@ class NeilRecons(NeilBase):
     self.popped[t >= self.pop_t] = True
 
 class NeilDecode(NeilBase):
-  def __init__(self, set_type, objects, batch_s, scl, n_frames, c, wn_w, wn_h, grav, random_start_pos=False, random_start_speed=False, random_size=False):
+  def __init__(self, set_type, objects, batch_s, scl, n_frames, c, wn_w, wn_h, grav, pop_t=0, random_start_pos=False, random_start_speed=False, random_size=False):
     super().__init__(objects, batch_s, scl, n_frames, wn_w, wn_h, grav, random_start_pos, random_start_speed, random_size)
 
     # Select object static and dynamic properties
     choices    = ['vernier']
     self.ori   = rng().uniform(0, 2*np.pi,      (1, batch_s))
     self.colr  = rng().randint(100, 255,        (c, batch_s))
-    self.pop_t = rng().randint(0, n_frames//2,  (1, batch_s))
+    # self.pop_t = rng().randint(0, n_frames//2,  (1, batch_s)) TODO reconsider modularising this
+    self.pop_t = pop_t
 
     self.shape  = rng().choice(choices, (1, batch_s))
     self.side   = rng().randint(0, 2, (1, batch_s)) if len(objects) == 0 else objects[0].side
