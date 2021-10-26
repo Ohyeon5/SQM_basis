@@ -106,7 +106,7 @@ def main_func(cfg: DictConfig) -> None:
     if log_input:
       # Log the test images
       video_sample = images.detach().cpu()[:n_seq_log].transpose(1, 2).numpy().astype('uint8')
-      wandb_logger.experiment.log({'video sample': wandb.Video(video_sample)}, commit=False)
+      wandb_logger.experiment.log({'video sample': wandb.Video(video_sample)}) # commit = False
 
     # If pro-vernier, should be reinforced toward ground truth
     # If anti-vernier, should be reinforced toward opposite of ground truth
@@ -126,7 +126,7 @@ def main_func(cfg: DictConfig) -> None:
   baseline_cross_entropy = 0
   batch_maker = BatchMaker('sqm', 1, cfg.batch_size, 13, (64, 64, 3), 'V', random_start_pos=cfg.random_start_pos, random_size=cfg.random_size)
   for batch in range(cfg.n_batches):
-    batch_accuracy, batch_cross_entropy = test_batch(batch_maker, log_input=True)
+    batch_accuracy, batch_cross_entropy = test_batch(batch_maker, log_input=cfg.log_test_data)
     baseline_accuracy += batch_accuracy
     baseline_cross_entropy += batch_cross_entropy
   baseline_accuracy = baseline_accuracy / cfg.n_batches
@@ -137,7 +137,7 @@ def main_func(cfg: DictConfig) -> None:
     condition_cross_entropy = 0
     batch_maker = BatchMaker('sqm', 1, cfg.batch_size, 13, (64, 64, 3), condition, random_start_pos=cfg.random_start_pos, random_size=cfg.random_size)
     for batch in range(cfg.n_batches):
-      batch_accuracy, batch_cross_entropy = test_batch(batch_maker, log_input=True)
+      batch_accuracy, batch_cross_entropy = test_batch(batch_maker, log_input=cfg.log_test_data)
       condition_accuracy += batch_accuracy
       condition_cross_entropy += batch_cross_entropy
     pv_accuracy.append(condition_accuracy / cfg.n_batches)
@@ -148,7 +148,7 @@ def main_func(cfg: DictConfig) -> None:
     condition_cross_entropy = 0
     batch_maker = BatchMaker('sqm', 1, cfg.batch_size, 13, (64, 64, 3), condition, random_start_pos=cfg.random_start_pos, random_size=cfg.random_size)
     for batch in range(cfg.n_batches):
-      batch_accuracy, batch_cross_entropy = test_batch(batch_maker, log_input=True)
+      batch_accuracy, batch_cross_entropy = test_batch(batch_maker, log_input=cfg.log_test_data)
       condition_accuracy += batch_accuracy
       condition_cross_entropy += batch_cross_entropy
     av_accuracy.append(condition_accuracy / cfg.n_batches)
