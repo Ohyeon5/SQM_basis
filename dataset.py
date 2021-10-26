@@ -287,7 +287,10 @@ class NeilSqm(NeilBase):
     # Parse the condition to retrieve the first and second offset frame numbers
     pattern_v1 = '^V(\d+)'
     match_v1 = re.search(pattern_v1, cond)
-    vernier1_t = int(match_v1.group(1))
+    if match_v1:
+      vernier1_t = int(match_v1.group(1))
+    else:
+      vernier1_t = 0
 
     pattern_v2 = '-(PV|AV)(\d+)$'
     match_v2 = re.search(pattern_v2, cond)
@@ -404,7 +407,7 @@ if __name__ == '__main__':
   import os
   
   set_type     = 'sqm'    # 'recons', 'decode' or 'sqm'
-  condition    = 'V0-AV1'  # 'V', 'V-PVn' or 'V-AVn', n > 0
+  condition    = 'V'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 1 # number of objects in one video sequence
   n_frames     = 13 # length of video sequence in frames
   scale        = 1
