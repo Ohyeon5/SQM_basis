@@ -157,7 +157,7 @@ class NeilDecode(NeilBase):
     self.ori   = rng().uniform(0, 2*np.pi,      (1, batch_s))
     self.colr  = rng().randint(100, 255,        (c, batch_s))
     # self.pop_t = rng().randint(0, n_frames//2,  (1, batch_s)) TODO reconsider modularising this
-    self.pop_t = pop_t
+    self.pop_t = np.ones((1, batch_s), dtype=int)*pop_t # frame where object appears
 
     self.shape  = rng().choice(choices, (1, batch_s))
     self.side   = rng().randint(0, 2, (1, batch_s)) if len(objects) == 0 else objects[0].side
@@ -407,7 +407,7 @@ if __name__ == '__main__':
   import imageio  # conda install -c conda-forge imageio
   import os
   
-  set_type     = 'sqm'    # 'recons', 'decode' or 'sqm'
+  set_type     = 'decode'    # 'recons', 'decode' or 'sqm'
   condition    = 'V'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 1 # number of objects in one video sequence
   n_frames     = 13 # length of video sequence in frames
