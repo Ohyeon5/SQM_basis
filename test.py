@@ -121,16 +121,22 @@ def main_func(cfg: DictConfig) -> None:
 
     return accuracy, cross_entropy
 
-  # Test baseline condition (only one vernier in the first frame)
-  baseline_accuracy = 0
-  baseline_cross_entropy = 0
-  batch_maker = BatchMaker('sqm', 1, cfg.batch_size, 13, (64, 64, 3), 'V', random_start_pos=cfg.random_start_pos, random_size=cfg.random_size)
-  for batch in range(cfg.n_batches):
-    batch_accuracy, batch_cross_entropy = test_batch(batch_maker, log_input=cfg.log_test_data)
-    baseline_accuracy += batch_accuracy
-    baseline_cross_entropy += batch_cross_entropy
-  baseline_accuracy = baseline_accuracy / cfg.n_batches
-  baseline_cross_entropy = baseline_cross_entropy / cfg.n_batches
+  # Test baseline conditions (only one vernier in each frame)
+  baseline_accuracies = []
+  baseline_cross_entropies = []
+  for frame in range(13):
+    baseline_accuracy = 0
+    baseline_cross_entropy = 0
+    batch_maker = BatchMaker('sqm', 1, cfg.batch_size, 13, (64, 64, 3), 'V{}'.format(frame), random_start_pos=cfg.random_start_pos, random_size=cfg.random_size)
+    for batch in range(cfg.n_batches):
+      batch_accuracy, batch_cross_entropy = test_batch(batch_maker, log_input=cfg.log_test_data)
+      baseline_accuracy += batch_accuracy
+      baseline_cross_entropy += batch_cross_entropy
+    baseline_accuracy = baseline_accuracy / cfg.n_batches
+    baseline_cross_entropy = baseline_cross_entropy / cfg.n_batches
+
+    baseline_accuracies.append(baseline_accuracy)
+    baseline_cross_entropies.append(baseline_cross_entropy)
 
   for condition in pv_conditions:
     condition_accuracy = 0
@@ -154,33 +160,40 @@ def main_func(cfg: DictConfig) -> None:
     av_accuracy.append(condition_accuracy / cfg.n_batches)
     av_cross_entropy.append(condition_cross_entropy / cfg.n_batches)
 
-  log_michael_plot(pv_accuracy, av_accuracy, baseline_accuracy)
-  log_michael_plot_ce(pv_cross_entropy, av_cross_entropy, baseline_cross_entropy)
+  log_michael_plot(pv_accuracy, av_accuracy, baseline_accuracies)
+  log_michael_plot_ce(pv_cross_entropy, av_cross_entropy, baseline_cross_entropies)
 
-  display_plot(pv_accuracy, av_accuracy, baseline_accuracy)
+  display_plot(pv_accuracy, av_accuracy, baseline_accuracies)
 
-def log_michael_plot(pv_accuracy, av_accuracy, baseline_accuracy):
+def log_michael_plot(pv_accuracy, av_accuracy, baseline_accuracies):
+  ys_accuracies = [12 * [baseline_accuracy] for baseline_accuracy in baseline_accuracies]
+  ys_data = [pv_accuracy, av_accuracy] + ys_accuracies
+  baseline_keys = ["Baseline accuracy {}".format(frame) for frame in range(13)]
   wandb_logger.experiment.log({"Michael plot": wandb.plot.line_series(
     xs=list(range(1, 13)),
-    ys=[pv_accuracy, av_accuracy, 13 * [baseline_accuracy]],
-    keys=["Pro-vernier accuracy", "Anti-vernier accuracy", "Baseline accuracy"],
+    ys=ys_data,
+    keys=["Pro-vernier accuracy", "Anti-vernier accuracy"] + baseline_keys,
     title="Michael plot",
     xname="Frame number",
   )})
 
-def log_michael_plot_ce(pv_cross_entropy, av_cross_entropy, baseline_cross_entropy):
+def log_michael_plot_ce(pv_cross_entropy, av_cross_entropy, baseline_cross_entropies):
+  ys_cross_entropies = [12 * [baseline_cross_entropy] for baseline_cross_entropy in baseline_cross_entropies]
+  ys_data = [pv_cross_entropy, av_cross_entropy] + ys_cross_entropies
+  baseline_keys = ["Baseline cross-entropy {}".format(frame) for frame in range(13)]
   wandb_logger.experiment.log({"Michael cross-entropy plot": wandb.plot.line_series(
     xs=list(range(1, 13)),
-    ys=[pv_cross_entropy, av_cross_entropy, 13 * [baseline_cross_entropy]],
-    keys=["Pro-vernier cross-entropy", "Anti-vernier cross-entropy", "Baseline cross-entropy"],
+    ys=ys_data,
+    keys=["Pro-vernier cross-entropy", "Anti-vernier cross-entropy"] + baseline_keys,
     title="Michael cross-entropy plot",
     xname="Frame number"
   )})
 
-def display_plot(pv_accuracy, av_accuracy, baseline_accuracy):
+def display_plot(pv_accuracy, av_accuracy, baseline_accuracies):
   plt.plot(list(range(1, 13)), pv_accuracy, 'r-', label="Pro-vernier accuracy")
   plt.plot(list(range(1, 13)), av_accuracy, 'b-', label="Anti-vernier accuracy")
-  plt.plot(list(range(1, 13)), 12 * [baseline_accuracy], 'g-', label="Baseline accuracy")
+  for frame in range(13):
+    plt.plot(list(range(1, 13)), 12 * [baseline_accuracies[frame]], 'g-', label="Baseline accuracy {}".format(frame))
   plt.legend()
   plt.show()
 
