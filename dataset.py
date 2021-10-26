@@ -285,25 +285,29 @@ class NeilSqm(NeilBase):
     self.popped[t >= self.pop_t] = True
 
     # Parse the condition to retrieve the first and second offset frame numbers
-    pattern = '^V(\d+)-(PV|AV)(\d+)$'
-    match = re.search(pattern, cond)
-    vernier1_t, vernier2_t = match.group(1, 3)
-    vernier1_t, vernier2_t = int(vernier1_t), int(vernier2_t)
-    vernier2_type = match.group(2)
+    pattern_v1 = '^V(\d+)'
+    match_v1 = re.search(pattern_v1, cond)
+    vernier1_t = int(match_v1.group(1))
 
-    # SQM related changes
+    pattern_v2 = '-(PV|AV)(\d+)$'
+    match_v2 = re.search(pattern_v2, cond)
+
+    # SQM related changes (TODO make this more elegant)
     for b in range(batch_s):
       if vernier1_t > 0 and t == vernier1_t:
         objects[-1].side_[:, b] = self.side[:, b]                 # seed offset
-      elif vernier2_t > 0 and t == vernier2_t:
-        if vernier2_type == 'AV':
-          objects[-1].side_[:, b] = 1 - self.side[:, b]  # opposite offset  
-          pass
-        if vernier2_type == 'PV':
-          objects[-1].side_[:, b] = self.side[:, b]      # same offset
-          pass
+      elif match_v2:
+        vernier2_t = int(match_v2.group(2))
+        vernier2_type = match_v2.group(1)
+        if vernier2_t > 0 and t == vernier2_t:
+          if vernier2_type == 'AV':
+            objects[-1].side_[:, b] = 1 - self.side[:, b]  # opposite offset  
+          if vernier2_type == 'PV':
+            objects[-1].side_[:, b] = self.side[:, b]      # same offset
+        else:
+          self.side_[:, b] = 2                               # no offset
       else:
-        self.side_[:, b] = 2                               # no offset
+        self.side_[:, b] = 2 # no offset
 
 # Class to generate batches of bouncing balls
 class BatchMaker():
@@ -400,7 +404,7 @@ if __name__ == '__main__':
   import os
   
   set_type     = 'sqm'    # 'recons', 'decode' or 'sqm'
-  condition    = 'V2-PV11'  # 'V', 'V-PVn' or 'V-AVn', n > 0
+  condition    = 'V5'  # 'V', 'V-PVn' or 'V-AVn', n > 0
   n_objects    = 1 # number of objects in one video sequence
   n_frames     = 13 # length of video sequence in frames
   scale        = 1
