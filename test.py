@@ -166,25 +166,19 @@ def main_func(cfg: DictConfig) -> None:
   display_plot(pv_accuracy, av_accuracy, baseline_accuracies)
 
 def log_michael_plot(pv_accuracy, av_accuracy, baseline_accuracies):
-  ys_accuracies = [12 * [baseline_accuracy] for baseline_accuracy in baseline_accuracies]
-  ys_data = [pv_accuracy, av_accuracy] + ys_accuracies
-  baseline_keys = ["Baseline accuracy {}".format(frame) for frame in range(13)]
   wandb_logger.experiment.log({"Michael plot": wandb.plot.line_series(
     xs=list(range(1, 13)),
-    ys=ys_data,
-    keys=["Pro-vernier accuracy", "Anti-vernier accuracy"] + baseline_keys,
+    ys=[pv_accuracy, av_accuracy, baseline_accuracies],
+    keys=["Pro-vernier accuracy", "Anti-vernier accuracy", "Baseline accuracy"],
     title="Michael plot",
     xname="Frame number",
   )})
 
 def log_michael_plot_ce(pv_cross_entropy, av_cross_entropy, baseline_cross_entropies):
-  ys_cross_entropies = [12 * [baseline_cross_entropy] for baseline_cross_entropy in baseline_cross_entropies]
-  ys_data = [pv_cross_entropy, av_cross_entropy] + ys_cross_entropies
-  baseline_keys = ["Baseline cross-entropy {}".format(frame) for frame in range(13)]
   wandb_logger.experiment.log({"Michael cross-entropy plot": wandb.plot.line_series(
     xs=list(range(1, 13)),
-    ys=ys_data,
-    keys=["Pro-vernier cross-entropy", "Anti-vernier cross-entropy"] + baseline_keys,
+    ys=[pv_cross_entropy, av_cross_entropy, baseline_cross_entropies],
+    keys=["Pro-vernier cross-entropy", "Anti-vernier cross-entropy", "Baseline cross-entropy"],
     title="Michael cross-entropy plot",
     xname="Frame number"
   )})
@@ -192,8 +186,7 @@ def log_michael_plot_ce(pv_cross_entropy, av_cross_entropy, baseline_cross_entro
 def display_plot(pv_accuracy, av_accuracy, baseline_accuracies):
   plt.plot(list(range(1, 13)), pv_accuracy, 'r-', label="Pro-vernier accuracy")
   plt.plot(list(range(1, 13)), av_accuracy, 'b-', label="Anti-vernier accuracy")
-  for frame in range(13):
-    plt.plot(list(range(1, 13)), 12 * [baseline_accuracies[frame]], 'g-', label="Baseline accuracy {}".format(frame))
+  #plt.plot(list(range(1, 13)), baseline_accuracies, 'g-', label="Baseline accuracy") TODO fix this
   plt.legend()
   plt.show()
 
